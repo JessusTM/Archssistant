@@ -174,16 +174,44 @@ pip install -r requirements.txt
 
 ### **Paso 4: Configurar Variables de Entorno**
 
-En la raíz del proyecto (o en `python_backend/`), crea un archivo `.env`:
+#### **Opción 1: Renombrar archivo `.env.example` (Recomendado)**
+
+Si existe un archivo `.env.example` en el proyecto:
 
 ```bash
-# Crear archivo .env
+# En Windows
+copy .env.example .env
+
+# En macOS/Linux
+cp .env.example .env
+```
+
+Luego, abre el archivo `.env` y reemplaza el valor:
+
+```env
+DEEPSEEK_API_KEY=tu_clave_api_real_aqui
+```
+
+#### **Opción 2: Crear archivo `.env` manualmente**
+
+Si no existe `.env.example`, crea un archivo `.env` en la raíz del proyecto:
+
+```bash
+# En Windows (PowerShell)
+@"
+DEEPSEEK_API_KEY=tu_clave_api_real_aqui
+"@ | Out-File -FilePath .env -Encoding UTF8
+
+# En macOS/Linux
 cat > .env << EOF
-DEEPSEEK_API_KEY=tu_clave_api_aqui
+DEEPSEEK_API_KEY=tu_clave_api_real_aqui
 EOF
 ```
 
-**⚠️ IMPORTANTE:** Reemplaza `tu_clave_api_aqui` con tu clave API real de DeepSeek.
+**⚠️ IMPORTANTE:** 
+- Reemplaza `tu_clave_api_real_aqui` con tu clave API real de DeepSeek
+- **NUNCA** subas el archivo `.env` a GitHub (está en `.gitignore`)
+- Mantén tu clave API segura y confidencial
 
 ---
 
@@ -834,35 +862,6 @@ Este proyecto está bajo la licencia **MIT**. Ver archivo [LICENSE](LICENSE) par
 ### **FastAPI**
 - [Documentación oficial](https://fastapi.tiangolo.com/)
 - [Guía completa](https://fastapi.tiangolo.com/learn/)
-
----
-
-## 📅 Changelog
-
-### **v1.0.0** (Actual)
-- ✅ Interfaz conversacional inicial
-- ✅ 8 arquitecturas soportadas
-- ✅ 8 parámetros de inferencia
-- ✅ Motor de recomendación
-- ✅ Diseño futurista
-- ✅ Integración DeepSeek
-
-### **v2.0.0** (Planificado)
-- 🔄 Más arquitecturas
-- 🔄 Persistencia de conversaciones
-- 🔄 Export de recomendaciones (PDF)
-- 🔄 Comparación de arquitecturas
-- 🔄 Soporte multiidioma
-- 🔄 Análisis de costos
-
----
-
-## ⭐ Agradecimientos
-
-Gracias a:
-- **DeepSeek** por su potente API de IA
-- **FastAPI** por el excelente framework
-- **La comunidad open source** por las herramientas y inspiración
 
 ---
 
