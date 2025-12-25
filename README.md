@@ -260,6 +260,74 @@ Cada una tiene estos parámetros:
 - Algoritmo: +2 puntos si diferencia=0, +1 si diferencia=1
 - Retorna TOP 3 arquitecturas ordenadas por score
 
+#### Editar Arquitecturas (Tutorial)
+
+Esta sección te guía para personalizar las arquitecturas que el sistema considera al recomendar.
+
+- **Ubicación:** Ver [python_backend/server/recommendation_engine/architecture_data.py](python_backend/server/recommendation_engine/architecture_data.py)
+- **Estructura:** Lista `architectures` de objetos con claves:
+  - `name`, `complexity`, `scalability`, `teamExperience`, `dataVolume`, `teamSize`, `availability`, `maintainability`, `interoperability`
+- **Valores permitidos:**
+  - Para la mayoría: Baja, Moderada, Alta, Excelente
+  - `teamSize`: Pequeño, Moderado, Grande, Alto
+  - `dataVolume`: Moderado, Alto, Excelente
+
+Pasos comunes:
+
+1) Añadir una arquitectura
+
+Inserta un nuevo objeto dentro de la lista `architectures` en el archivo indicado.
+
+Ejemplo:
+
+```python
+{
+    'name': 'Arquitectura Hexagonal (Ports & Adapters)',
+    'complexity': 'Alta',
+    'scalability': 'Moderada',
+    'teamExperience': 'Alta',
+    'dataVolume': 'Moderado',
+    'teamSize': 'Moderado',
+    'availability': 'Alta',
+    'maintainability': 'Excelente',
+    'interoperability': 'Alta'
+}
+```
+
+2) Eliminar una arquitectura
+
+Borra el objeto correspondiente de la lista `architectures` (asegúrate de mantener la sintaxis válida de Python).
+
+3) Modificar una arquitectura
+
+Edita los valores de las claves existentes usando las categorías permitidas arriba. Cambios inválidos (valores fuera de catálogo) no puntuarán al calcular el ranking.
+
+Notas importantes:
+
+- **Nombre exacto:** El módulo de descripciones usa el `name` como clave para generar textos; mantén nombres únicos y bien escritos para que coincidan en la salida.
+- **Impacto en el ranking:** `engine.py` toma automáticamente todas las entradas en `architectures`. Añadir o quitar elementos afecta el TOP 3.
+- **Prueba rápida:** Reinicia el backend y ejecuta una conversación que infiera al menos 5 parámetros; verás la nueva arquitectura competir en el ranking.
+
+Comandos útiles (Windows):
+
+```powershell
+cd python_backend
+python .\main.py
+```
+
+#### Catálogo de valores permitidos (VALUE_MAP)
+
+Para que el motor de puntuación funcione, usa exactamente estas palabras (con mayúsculas y tildes) al editar las arquitecturas en [python_backend/server/recommendation_engine/architecture_data.py](python_backend/server/recommendation_engine/architecture_data.py). Se aceptan formas de género donde se indica.
+
+- Escalas generales: Baja (1), Moderada/Moderado (3), Alta/Alto (4), Excelente (5)
+- Tamaño del equipo (`teamSize`): Pequeño (2), Moderado (3), Grande (4), Alto (4)
+- Volumen de datos (`dataVolume`): Moderado (3), Alto (4), Excelente (5)
+
+Notas:
+- Los valores deben coincidir exactamente con el catálogo anterior; otros valores no puntúan.
+- `Moderada` y `Moderado` se tratan igual (3); `Alta` y `Alto` se tratan igual (4).
+- `Grande` y `Alto` se mapean ambos a 4 para `teamSize`.
+
 ### Backend - Main Server (main.py)
 
 - FastAPI app con titulo 'Arch-Assistant' version '1.0.0'
