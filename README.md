@@ -220,9 +220,18 @@ EOF
 ### **Variables de Entorno (.env)**
 
 ```env
-# DeepSeek API Configuration
+# DeepSeek API Configuration (REQUERIDO)
 DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Configuración del servidor (Opcional - usa valores por defecto si no se especifica)
+PORT=5000
+HOST=0.0.0.0
 ```
+
+**Variables:**
+- `DEEPSEEK_API_KEY` *(requerido)* - Tu clave API de DeepSeek
+- `PORT` *(opcional, defecto: 5000)* - Puerto donde escuchar
+- `HOST` *(opcional, defecto: 0.0.0.0)* - Host/IP donde escuchar
 
 **Obtener la clave API:**
 1. Visita [https://www.deepseek.com/](https://www.deepseek.com/)
@@ -257,31 +266,29 @@ Desde la carpeta `python_backend/`:
 python main.py
 ```
 
-O alternativamente:
-
-```bash
-uvicorn main:app --reload
-```
-
 **Output esperado:**
 ```
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+Servidor Arch-Assistant iniciando en http://localhost:5000
+INFO:     Uvicorn running on http://0.0.0.0:5000
 INFO:     Started server process [12345]
-INFO:     Waiting for application startup.
 ```
+
+**Nota:** El puerto por defecto es `5000`. Puedes cambiarlo configurando la variable de entorno `PORT` en `.env`.
 
 ### **Acceder a la Aplicación**
 
 Abre tu navegador y ve a:
 ```
-http://127.0.0.1:8000
+http://localhost:5000
 ```
+
+La carpeta `public/` se sirve automáticamente desde la raíz.
 
 ### **Primer Uso**
 
-1. **Carga la interfaz**: Se mostrará el mensaje de bienvenida
-2. **Describe tu proyecto**: Escribe una descripción detallada de lo que necesitas
-3. **Responde preguntas**: El sistema hará preguntas sobre:
+1. **Carga la interfaz**: Se mostrará el mensaje de bienvenida del asistente
+2. **Describe tu proyecto**: Escribe una descripción inicial de tu proyecto
+3. **Responde preguntas**: El sistema hará preguntas sobre 8 parámetros clave:
    - Complejidad del sistema
    - Requisitos de escalabilidad
    - Experiencia del equipo
@@ -291,7 +298,7 @@ http://127.0.0.1:8000
    - Mantenibilidad
    - Interoperabilidad
 
-4. **Recibe recomendación**: El sistema mostrará las 3 mejores arquitecturas con puntuaciones
+4. **Recibe recomendación**: Cuando se recopilen 5 parámetros, el sistema generará las 3 mejores arquitecturas recomendadas
 
 ### **Ejemplo de Conversación**
 
@@ -389,75 +396,185 @@ archssistant/
 
 **Estados principales:**
 ```
-interviewing → (recopilación de parámetros)
-clarifying   → (preguntas de aclaración)
-recommending → (generación de recomendación)
-completed    → (finalizado)
+interviewing → (fase de recopilación de parámetros)
+recommending → (fase de generación de recomendación)
+finished     → (conversación completada)
 ```
+
+**Parámetros definidos:**
+```python
+ALL_PARAMETERS = [
+    'complexity', 'scalability', 'teamExperience', 'dataVolume',
+    'teamSize', 'availability', 'maintainability', 'interoperability'
+]
+```
+
+**Lógica principal:**
+1. Si status="interviewing" y hay pregunta previa:
+   - Interpreta respuesta anterior vía LLM
+   - Clasifica como CERTAIN o UNCERTAIN
+   - Si UNCERTAIN → activa isClarifying=true
+   - Si CERTAIN → añade a inferredParams
+   
+2. Si se han recopilado >= 5 parámetros → status="recommending"
+
+3. Si status="recommending":
+   - Obtiene top 3 arquitecturas del motor
+   - Genera descripciones vía LLM
+   - Retorna respuesta con recomendaciones
 
 ### **3. Backend - LLM Service**
 
 #### `llm_service.py`
-**Funciones principales:**
-- `call_api()` - Realiza peticiones a API DeepSeek
-- `interpret_user_answer()` - Clasifica respuestas en categorías
-- `generate_next_question()` - Genera preguntas dinámicas
-- `generate_final_descriptions()` - Describe arquitecturas recomendadas
 
-**Características:**
-- Manejo robusto de errores de API
-- Validación de claves API
-- Respuestas en formato JSON estruturado
-- Temperature bajo (0.2) para respuestas consistentes
+**Funciones principales:**
+
+1. **`call_api(messages, temperature=0.2)`**
+   - Realiza peticiones HTTP a API DeepSeek
+   - Usa modelo: `deepseek-chat`
+   - Requiere autenticación via Bearer token
+   - Retorna respuesta en formato JSON
+   - Maneja errores de autenticación y validación de claves
+
+2. **`interpret_user_answer(question_text, user_answer, parameter_to_infer)`**
+   - Clasifica respuesta del usuario
+   - Retorna: `{"classification": "valor", "confidence": "high|medium|low", "reasoning": "..."}`
+   - Clasifica como UNCERTAIN si el usuario es ambiguo o no sabe
+   - Temperature: 0.0 (máxima consistencia)
+
+3. **`generate_next_question(history, remaining_params, last_interpretation, is_clarification_needed)`**
+   - Genera siguiente pregunta estratégica
+   - Analiza si se necesita clarificación o preguntar nuevo parámetro
+   - Si es clarificación: reformula pregunta más simple sobre mismo parámetro
+   - Si es normal: elige parámetro estratégico (escala > equipo > calidad)
+   - Temperature: 0.6
+   - Retorna: `{"parameter_to_infer": "...", "question_for_user": "...", "full_response_text": "..."}`
+
+4. **`generate_final_descriptions(project_description, recommendations, history)`**
+   - Genera descripción y justificación para cada arquitectura recomendada
+   - Temperature: 0.6
+   - Retorna objeto JSON con claves exactas a nombres de arquitecturas
+   - Si falla, retorna descripciones por defecto
+
+**Validaciones de Clave API:**
+- Detecta si la clave es un placeholder ("sk-replace_me", "tu_clave_api_aqui", etc)
+- Valida que no esté vacía
+- Lanza `ApiKeyError` si hay problemas de autenticación
 
 ### **4. Backend - Recommendation Engine**
 
 #### `architecture_data.py`
-Base de datos con 8 arquitecturas predefinidas:
-1. **Monolítica** - Simple, baja complejidad
-2. **Microservicios** - Altamente escalable, compleja
-3. **SOA** - Servicios empresariales
-4. **Capas** - Tradicional, moderada complejidad
-5. **Cliente-Servidor** - Clásica, escalable
-6. **Nube** - Escalabilidad extrema
-7. **Basada en Eventos (EDA)** - Altamente reactiva
+Base de datos con **7 arquitecturas** predefinidas:
 
-Cada arquitectura tiene 8 parámetros evaluados:
-- `complexity` - Complejidad del sistema
+| # | Nombre | Complejidad | Escalabilidad | Disponibilidad |
+|---|--------|------------|--------------|----------------|
+| 1 | Monolítica | Baja | Baja | Baja |
+| 2 | Microservicios | Alta | Alta | Excelente |
+| 3 | SOA | Alta | Moderada | Alta |
+| 4 | Capas | Alta | Moderada | Moderada |
+| 5 | Cliente-Servidor | Moderada | Alta | Moderada |
+| 6 | Nube | Alta | Excelente | Excelente |
+| 7 | Basada en Eventos (EDA) | Alta | Alta | Alta |
+
+Cada arquitectura tiene 8 parámetros:
+- `complexity` - Complejidad técnica
 - `scalability` - Capacidad de escalar
-- `teamExperience` - Experiencia requerida del equipo
-- `dataVolume` - Volumen de datos manejado
+- `teamExperience` - Experiencia requerida del equipo  
+- `dataVolume` - Volumen de datos que maneja
 - `teamSize` - Tamaño de equipo recomendado
-- `availability` - Disponibilidad
-- `maintainability` - Mantenibilidad
-- `interoperability` - Interoperabilidad
+- `availability` - Disponibilidad del sistema
+- `maintainability` - Facilidad de mantenimiento
+- `interoperability` - Interoperabilidad con otros sistemas
 
 #### `engine.py`
-- Algoritmo de puntuación: compara parámetros del usuario con cada arquitectura
-- Sistema de scoring:
-  - +2 puntos por coincidencia exacta
-  - +1 punto por coincidencia cercana (diferencia de 1)
-- Retorna las 3 arquitecturas mejor puntuadas
+
+**Función: `get_recommendation(user_answers)`**
+
+Algoritmo de puntuación:
+```python
+VALUE_MAP = {
+    'Baja': 1, 'Pequeño': 2, 'Moderado': 3, 'Moderada': 3,
+    'Alta': 4, 'Grande': 4, 'Alto': 4, 'Excelente': 5
+}
+
+# Para cada parámetro del usuario:
+difference = abs(user_score - architecture_score)
+if difference == 0:
+    score += 2  # Coincidencia exacta
+elif difference == 1:
+    score += 1  # Coincidencia cercana
+```
+
+**Retorna:** Las 3 mejores arquitecturas ordenadas por puntuación descendente
+
+**Ejemplo:**
+```
+Entrada: {'scalability': 'Alta', 'complexity': 'Alta', 'teamSize': 'Grande'}
+Salida: [
+  {'name': 'Microservicios', 'score': 6, ...},
+  {'name': 'Nube', 'score': 5, ...},
+  {'name': 'EDA', 'score': 5, ...}
+]
+```
 
 ### **5. Backend - Main Server**
 
 #### `main.py`
-**Endpoints:**
-- `POST /api/chat` - Recibe mensaje del usuario y retorna respuesta del asistente
 
-**Respuesta:**
+**Inicialización:**
+```python
+app = FastAPI(title='Arch-Assistant', version='1.0.0')
+
+# CORS habilitado para todos los orígenes
+app.add_middleware(CORSMiddleware, allow_origins=['*'], ...)
+
+# Sirve archivos estáticos desde public/
+app.mount('/', StaticFiles(directory=public_dir, html=True), name='static')
+```
+
+**Endpoint único:**
+
+```python
+@app.post('/api/chat')
+async def chat(request: ChatRequest):
+    """
+    Recibe historial de conversación, procesa mensaje final,
+    retorna respuesta y estado actualizado.
+    """
+```
+
+**Validaciones:**
+- Verifica que `request.history` sea un array
+- Retorna error 400 si es inválido
+- Captura `ApiKeyError` → retorna error 401
+- Captura excepciones generales → retorna error 500
+
+**Configuración via Entorno:**
+```python
+PORT = int(os.getenv('PORT', 5000))       # Puerto (defecto: 5000)
+HOST = os.getenv('HOST', '0.0.0.0')       # Host (defecto: 0.0.0.0)
+```
+
+**Response:**
 ```json
 {
   "response": {
     "role": "assistant",
     "content": "Texto de respuesta",
-    "recommendation": null  // O estructura con recomendaciones
+    "recommendation": [
+      {
+        "name": "Arquitectura X",
+        "description": "...",
+        "justification": "...",
+        ... (más parámetros arquitectónicos)
+      }
+    ] // null si aún no hay recomendación
   },
   "state": {
     "inferredParams": {...},
     "lastQuestion": {...},
     "isClarifying": false,
-    "status": "interviewing"
+    "status": "interviewing|recommending|finished"
   }
 }
 ```
@@ -472,7 +589,7 @@ Cada arquitectura tiene 8 parámetros evaluados:
 
 **URL:**
 ```
-POST http://localhost:8000/api/chat
+POST http://localhost:5000/api/chat
 ```
 
 **Headers:**
@@ -559,107 +676,104 @@ Content-Type: application/json
 ## 🔄 Flujo de Conversación
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ FASE 1: INICIALIZACIÓN                                      │
-├─────────────────────────────────────────────────────────────┤
-│ 1. Usuario describe el proyecto                             │
-│ 2. Sistema guarda como "user_description"                   │
-│ 3. Inicia recopilación de parámetros                        │
-└───────────────────┬─────────────────────────────────────────┘
-                    │
-┌───────────────────▼─────────────────────────────────────────┐
-│ FASE 2: ENTREVISTA (status: "interviewing")                │
-├─────────────────────────────────────────────────────────────┤
-│ Ciclo para cada parámetro no inferido:                      │
-│ 1. Genera pregunta específica para el parámetro             │
-│ 2. Guarda pregunta en estado                                │
-│ 3. Interpreta respuesta del usuario                         │
-│ 4. Clasifica como CERTAIN, UNCERTAIN, o UNKNOWN            │
-│ 5. Infiere valor del parámetro                              │
-│ Parámetros: complexity, scalability, teamExperience...      │
-└───────────────────┬─────────────────────────────────────────┘
-                    │
-┌───────────────────▼─────────────────────────────────────────┐
-│ FASE 3: CLARIFICACIÓN (si status: "clarifying")            │
-├─────────────────────────────────────────────────────────────┤
-│ Si respuesta anterior fue UNCERTAIN:                        │
-│ 1. Genera pregunta de clarificación                         │
-│ 2. Intenta obtener clasificación más clara                  │
-│ 3. Vuelve a interpretar                                     │
-└───────────────────┬─────────────────────────────────────────┘
-                    │
-┌───────────────────▼─────────────────────────────────────────┐
-│ FASE 4: RECOMENDACIÓN (cuando params completos)            │
-├─────────────────────────────────────────────────────────────┤
-│ 1. Envía parámetros al motor de recomendación              │
-│ 2. Calcula puntuaciones para cada arquitectura              │
-│ 3. Genera descripciones detalladas                          │
-│ 4. Retorna top 3 arquitecturas                              │
-│ 5. status → "completed"                                     │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│ FASE 1: INICIALIZACIÓN                                       │
+├──────────────────────────────────────────────────────────────┤
+│ 1. Usuario describe el proyecto en el primer mensaje         │
+│ 2. Sistema marca como "role: user_description"              │
+│ 3. Inicia estado "interviewing"                             │
+└────────────────────┬─────────────────────────────────────────┘
+                     │
+┌────────────────────▼─────────────────────────────────────────┐
+│ FASE 2: ENTREVISTA (status: "interviewing")                 │
+├──────────────────────────────────────────────────────────────┤
+│ Ciclo iterativo hasta recopilar 5 parámetros:               │
+│ 1. Genera pregunta estratégica vía LLM                       │
+│ 2. Usuario responde                                          │
+│ 3. Interpreta respuesta: CERTAIN o UNCERTAIN                │
+│ 4. Si es CERTAIN → infiere parámetro (score +2 o +1)        │
+│ 5. Si es UNCERTAIN → modo clarificación                     │
+│                                                              │
+│ Parámetros disponibles (max 8):                             │
+│   - complexity          (Baja, Moderada, Alta, Excelente)   │
+│   - scalability         (Baja, Moderada, Alta, Excelente)   │
+│   - teamExperience      (Baja, Moderada, Alta, Excelente)   │
+│   - dataVolume          (Moderado, Alto, Excelente)         │
+│   - teamSize            (Pequeño, Moderado, Grande, Alto)   │
+│   - availability        (Baja, Moderada, Alta, Excelente)   │
+│   - maintainability     (Baja, Moderada, Alta, Excelente)   │
+│   - interoperability    (Baja, Moderada, Alta, Excelente)   │
+└────────────────────┬─────────────────────────────────────────┘
+                     │
+┌────────────────────▼─────────────────────────────────────────┐
+│ FASE 3: CLARIFICACIÓN (si isClarifying = true)              │
+├──────────────────────────────────────────────────────────────┤
+│ Si respuesta anterior fue UNCERTAIN:                         │
+│ 1. Empatiza con usuario                                      │
+│ 2. Genera pregunta más simple sobre el MISMO parámetro       │
+│ 3. Intenta clasificación más clara (si falla → mantiene)     │
+│ 4. Retorna a ENTREVISTA con nuevo parámetro                 │
+└────────────────────┬─────────────────────────────────────────┘
+                     │
+┌────────────────────▼─────────────────────────────────────────┐
+│ FASE 4: RECOMENDACIÓN (cuando >= 5 parámetros)             │
+├──────────────────────────────────────────────────────────────┤
+│ 1. Calcula puntuación para TODAS las 7 arquitecturas         │
+│ 2. Ordena por score (descendente)                            │
+│ 3. Selecciona TOP 3 arquitecturas                            │
+│ 4. Genera descripción y justificación via LLM                │
+│ 5. Retorna respuesta con "recommendation" array              │
+│ 6. status → "finished"                                       │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## 🏗️ Arquitecturas Soportadas
 
+El sistema recomienda una de estas 7 arquitecturas basada en los parámetros inferidos:
+
 ### **1. Monolítica**
-- **Mejor para:** Proyectos pequeños, startups
-- **Ventajas:** Simple, fácil de desplegar
-- **Desventajas:** Difícil de escalar
-- **Parámetros:**
-  - Complejidad: Baja
-  - Escalabilidad: Baja
-  - Experiencia: Baja
+- **Complejidad:** Baja
+- **Escalabilidad:** Baja
+- **Equipo:** Pequeño, poca experiencia
+- **Mejor para:** Startups, MVPs, proyectos pequeños
 
 ### **2. Microservicios**
-- **Mejor para:** Sistemas grandes, equipos grandes
-- **Ventajas:** Altamente escalable, flexible
-- **Desventajas:** Compleja de gestionar
-- **Parámetros:**
-  - Complejidad: Alta
-  - Escalabilidad: Alta
-  - Experiencia: Alta
-  - Disponibilidad: Excelente
+- **Complejidad:** Alta
+- **Escalabilidad:** Alta
+- **Disponibilidad:** Excelente
+- **Mejor para:** Sistemas grandes, equipos grandes, alto tráfico
 
-### **3. SOA (Orientada a Servicios)**
-- **Mejor para:** Empresas grandes, integraciones complejas
-- **Ventajas:** Interoperabilidad excelente
-- **Desventajas:** Implementación compleja
-- **Parámetros:**
-  - Complejidad: Alta
-  - Interoperabilidad: Excelente
+### **3. SOA (Arquitectura Orientada a Servicios)**
+- **Complejidad:** Alta
+- **Escalabilidad:** Moderada
+- **Interoperabilidad:** Excelente
+- **Mejor para:** Integraciones empresariales complejas
 
-### **4. Capas**
-- **Mejor para:** Aplicaciones tradicionales
-- **Ventajas:** Bien comprendida, mantenible
-- **Desventajas:** Escalabilidad limitada
-- **Parámetros:**
-  - Complejidad: Alta
-  - Mantenibilidad: Alta
+### **4. Arquitectura de Capas**
+- **Complejidad:** Alta
+- **Mantenibilidad:** Alta
+- **Escalabilidad:** Moderada
+- **Mejor para:** Aplicaciones tradicionales, equipos medianos
 
 ### **5. Cliente-Servidor**
-- **Mejor para:** Aplicaciones web tradicionales
-- **Ventajas:** Escalable horizontalmente
-- **Desventajas:** Acoplamiento cliente-servidor
-- **Parámetros:**
-  - Escalabilidad: Alta
+- **Complejidad:** Moderada
+- **Escalabilidad:** Alta
+- **Disponibilidad:** Moderada
+- **Mejor para:** Aplicaciones web clásicas, escalado horizontal
 
-### **6. Nube**
-- **Mejor para:** Cualquier proyecto moderno
-- **Ventajas:** Escalabilidad extrema, flexible
-- **Desventajas:** Dependencia de proveedor
-- **Parámetros:**
-  - Escalabilidad: Excelente
-  - Disponibilidad: Excelente
+### **6. Arquitectura en la Nube**
+- **Complejidad:** Alta
+- **Escalabilidad:** Excelente
+- **Disponibilidad:** Excelente
+- **Mejor para:** Cualquier proyecto moderno, máxima escalabilidad
 
-### **7. Basada en Eventos (EDA)**
-- **Mejor para:** Sistemas altamente reactivos
-- **Ventajas:** Escalable, desacoplada
-- **Desventajas:** Complejidad operacional
-- **Parámetros:**
-  - Escalabilidad: Alta
-  - Volumen de datos: Excelente
+### **7. Basada en Eventos (EDA - Event-Driven Architecture)**
+- **Complejidad:** Alta
+- **Escalabilidad:** Alta
+- **Volumen de datos:** Excelente
+- **Mejor para:** Sistemas reactivos, streaming de datos, eventos en tiempo real
 
 ---
 
@@ -700,11 +814,12 @@ Content-Type: application/json
 
 ### **Agregar Nueva Arquitectura**
 
-En `python_backend/server/recommendation_engine/architecture_data.py`:
+En [python_backend/server/recommendation_engine/architecture_data.py](python_backend/server/recommendation_engine/architecture_data.py):
 
 ```python
+# Agregar al final de la lista 'architectures'
 architectures.append({
-    'name': 'Mi Arquitectura',
+    'name': 'Arquitectura Personalizada',
     'complexity': 'Alta',
     'scalability': 'Moderada',
     'teamExperience': 'Alta',
@@ -716,37 +831,72 @@ architectures.append({
 })
 ```
 
+**Valores permitidos:**
+- `complexity`, `scalability`, `teamExperience`, `availability`, `maintainability`, `interoperability`: "Baja", "Moderada", "Alta", "Excelente"
+- `dataVolume`: "Moderado", "Alto", "Excelente"  
+- `teamSize`: "Pequeño", "Moderado", "Grande", "Alto"
+
 ### **Agregar Nuevo Parámetro**
 
-1. En `orchestrator.py`, agrega a `ALL_PARAMETERS`:
+Esto requiere cambios en 3 archivos:
+
+**1. En [orchestrator.py](python_backend/server/dialogue_orchestrator/orchestrator.py):**
 ```python
 ALL_PARAMETERS = [
-    'complexity', 'scalability', ..., 'nuevoParametro'
+    'complexity', 'scalability', 'teamExperience', 'dataVolume',
+    'teamSize', 'availability', 'maintainability', 'interoperability',
+    'nuevoParametro'  # ← Agregar aquí
 ]
 ```
 
-2. En `architecture_data.py`, agrega a cada arquitectura:
+**2. En [architecture_data.py](python_backend/server/recommendation_engine/architecture_data.py):**
 ```python
-'nuevoParametro': 'Valor'
+# Agregar a CADA arquitectura en el diccionario:
+{
+    'name': 'Arquitectura X',
+    ...
+    'nuevoParametro': 'Valor'  # ← Agregar aquí
+}
 ```
 
-3. En `script.js`, agrega label en `PARAMETER_LABELS`:
+**3. En [script.js](public/script.js):**
 ```javascript
 const PARAMETER_LABELS = {
+    complexity: 'Complejidad',
     ...
-    nuevoParametro: 'Mi Parámetro'
+    nuevoParametro: 'Etiqueta Legible'  // ← Agregar aquí
 };
 ```
 
 ### **Modificar Algoritmo de Puntuación**
 
-En `python_backend/server/recommendation_engine/engine.py`:
+En [engine.py](python_backend/server/recommendation_engine/engine.py):
 
 ```python
 def get_recommendation(user_answers):
-    # Personaliza la lógica de puntuación aquí
-    # Actualmente: +2 exacta, +1 cercana
+    """Modificar la lógica aquí"""
+    # Actualmente:
+    # - +2 puntos por coincidencia exacta (diferencia = 0)
+    # - +1 punto por coincidencia cercana (diferencia = 1)
+    # - 0 puntos por diferencia > 1
 ```
+
+### **Cambiar Temperatures de LLM**
+
+En [llm_service.py](python_backend/server/llm_service/llm_service.py):
+
+```python
+async def interpret_user_answer(...):
+    return await call_api(messages, 0.0)  # ← Cambiar aquí (defecto: 0.0)
+
+async def generate_next_question(...):
+    return await call_api(messages, 0.6)  # ← Cambiar aquí (defecto: 0.6)
+
+async def generate_final_descriptions(...):
+    return await call_api(messages, 0.6)  # ← Cambiar aquí (defecto: 0.6)
+```
+
+**Rango:** 0.0 (determinístico) a 1.0 (creativo)
 
 ---
 
@@ -754,58 +904,127 @@ def get_recommendation(user_answers):
 
 ### **Error: "La clave de API no está configurada"**
 ```
+Síntoma: Error 401 en respuesta de /api/chat
+Causas posibles:
+  1. No existe archivo .env
+  2. DEEPSEEK_API_KEY no está configurada
+  3. La clave es un placeholder ("sk-replace_me", "tu_clave_api_aqui", etc)
+
 Solución:
-1. Verifica que existe el archivo .env
-2. La variable se llama DEEPSEEK_API_KEY
-3. Copia tu clave real de https://www.deepseek.com/
-4. Reinicia el servidor
+  1. Verifica que existe el archivo .env en la raíz del proyecto
+  2. Abre .env y verifica DEEPSEEK_API_KEY=sk-[tu_clave_real]
+  3. Obtén una clave real en https://www.deepseek.com/
+  4. Reinicia el servidor: python main.py
 ```
 
-### **Error: "No se puede conectar al servidor"**
+### **Error: "No se puede conectar al servidor" / "Conexión rechazada"**
 ```
+Síntoma: El navegador no carga http://localhost:5000
+Causas posibles:
+  1. El servidor no está corriendo
+  2. Puerto 5000 está ocupado por otro programa
+  3. Firewall bloquea la conexión
+
 Solución:
-1. Verifica que estés en la carpeta python_backend/
-2. Ejecuta: python main.py
-3. Abre: http://127.0.0.1:8000 en el navegador
-4. Revisa los logs en la terminal
+  1. Verifica que estés en carpeta python_backend/
+  2. Ejecuta: python main.py
+  3. Espera el mensaje "Servidor iniciando en http://localhost:5000"
+  4. Si el puerto está ocupado, cambia con: PORT=5001 python main.py
+  5. Abre http://localhost:5001 en el navegador
 ```
 
-### **El frontend no se carga**
+### **Error: "404 - Archivo no encontrado" en frontend**
 ```
+Síntoma: El servidor corre pero la página muestra 404
+Causas posibles:
+  1. La carpeta public/ está mal ubicada
+  2. El servidor no monta los archivos estáticos correctamente
+
 Solución:
-1. Verifica que el servidor FastAPI está corriendo
-2. La carpeta public/ está al mismo nivel que python_backend/
-3. Limpia la caché del navegador (Ctrl+Shift+Del)
-4. Revisa la consola de desarrollador (F12)
+  1. Verifica que exista: c:\...\archssistant\public\index.html
+  2. Limpia la caché: Ctrl+Shift+Del en el navegador
+  3. Abre en ventana privada/incógnito
+  4. Revisa los logs del servidor
 ```
 
-### **La IA devuelve respuestas inconsistentes**
+### **Error: "Error al procesar el mensaje" en chat**
 ```
+Síntoma: Envías un mensaje y recibess error genérico
+Causas posibles:
+  1. La clave API de DeepSeek es inválida
+  2. DeepSeek API está inactiva o límite de requests alcanzado
+  3. El formato del historial es incorrecto
+
 Solución:
-1. Verifica la temperatura en llm_service.py (está en 0.2)
-2. Asegúrate de que el modelo es 'deepseek-chat'
-3. Revisa que el formato de respuesta sea JSON válido
-4. Aumenta la temperatura para más creatividad, disminuye para más consistencia
+  1. Verifica en consola del servidor (terminal donde corre python main.py)
+  2. Revisa que la clave API sea válida en https://www.deepseek.com/
+  3. Abre la consola del navegador (F12) y revisa los errores
+  4. Intenta recargar la página (Ctrl+R) y empieza nueva conversación
+```
+
+### **Las respuestas de la IA son inconsistentes**
+```
+Síntoma: El sistema cambia su respuesta frecuentemente para la misma pregunta
+Causa: La temperatura de LLM es muy alta
+
+Información:
+  - interpret_user_answer: temperature=0.0 (consistencia máxima) ✓
+  - generate_next_question: temperature=0.6 (equilibrio)
+  - generate_final_descriptions: temperature=0.6 (equilibrio)
+
+Si quieres aumentar consistencia:
+  - Disminuye temperature en llm_service.py
+  - Valores: 0.0 (determinístico) a 1.0 (creativo)
+```
+
+### **El progreso en la barra lateral no avanza**
+```
+Síntoma: El círculo de progreso no muestra parámetros inferidos
+Causas posibles:
+  1. JavaScript tiene error en consola
+  2. El estado no se está retornando correctamente del servidor
+
+Solución:
+  1. Abre F12 → Console y revisa errores
+  2. Envía un mensaje y revisa qué retorna en Network → /api/chat
+  3. Verifica que la respuesta contenga un campo "state"
 ```
 
 ---
 
-## 📊 Métricas y Monitoreo
+## 📊 Logging y Debugging
 
-### **Logging**
-El servidor FastAPI registra automáticamente:
-- Peticiones HTTP
-- Errores y excepciones
-- Cambios de estado
+### **Logs del Servidor**
+El servidor FastAPI/Uvicorn registra automáticamente en consola:
 
-Para ver los logs, revisa la salida de la terminal donde corre `python main.py`.
+```
+INFO:     Uvicorn running on http://0.0.0.0:5000
+INFO:     Started server process [12345]
+INFO:     Application startup complete
+INFO:     127.0.0.1:8000 - "POST /api/chat HTTP/1.1" 200
+```
 
-### **Debugging**
-Habilita modo debug en `script.js`:
+**Logs de Debug en orchestrator.py:**
+```python
+print(f"DEBUG: Generando descripciones para {len(recommendations)} arquitecturas")
+print(f"DEBUG: Arquitecturas: {[r['name'] for r in recommendations]}")
+print(f"DEBUG LLM: Descripciones generadas: {result}")
+```
+
+Para ver estos logs, observa la terminal donde ejecutas `python main.py`.
+
+### **Debugging en Frontend**
+Abre la consola del navegador (F12) para ver:
+- Errores de JavaScript
+- Solicitudes y respuestas HTTP en la pestaña "Network"
+- Estado de variables en "Console"
+
+**Debug útil:**
 ```javascript
-// Descomenta para ver logs detallados
-console.log('Historial:', conversationHistory);
-console.log('Estado:', state);
+// En console (F12):
+conversationHistory   // Ver historial completo
+state                 // Ver estado actual
+fetch('/api/chat', {...})  // Probar manualmente API
 ```
 
 ---
