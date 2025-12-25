@@ -58,7 +58,6 @@ source venv/bin/activate
 ### Paso 3: Instalar Dependencias
 
 ```bash
-cd python_backend
 pip install -r requirements.txt
 ```
 
@@ -104,7 +103,16 @@ El archivo `.env` contiene:
 
 ### Archivo .env.example
 
-Existe `python_backend/.env.example` con plantilla de configuración.
+- Plantilla en la raíz: `.env.example`
+- Copia la plantilla a `.env` (no versionar `.env`).
+
+---
+
+## Seguridad y gitignore
+
+- El `.gitignore` en la raíz excluye `.env`, entornos virtuales (`venv/`, `.venv/`), `node_modules/`, logs, temporales y credenciales (`secrets/`, `credentials/`, `*.key`, `*.pem`, `*.cert`).
+- No subas nunca `.env` ni llaves; usa `.env.example` como plantilla.
+- `python_backend/.gitignore` refuerza las exclusiones dentro del backend.
 
 ---
 
@@ -126,6 +134,16 @@ Abre navegador en: `http://localhost:5000`
 
 La carpeta `public/` se sirve automáticamente como estática.
 
+### Rutas del API (backend FastAPI)
+
+- `POST /api/chat`
+  - **Body**: `{ "history": [ {"role": "user" | "assistant" | "user_description", "content": "..."} ] }`
+  - **Flujo**: entrevista hasta inferir ≥5 parámetros; luego recomienda TOP 3 arquitecturas y pide descripciones al LLM.
+  - **Respuesta**:
+    - `response.content`: texto de la pregunta o agradecimiento final
+    - `response.recommendation` (cuando finaliza): lista de 3 arquitecturas con `name`, `description`, `justification` y métricas
+    - `state`: `status` (`interviewing` | `recommending` | `finished`), `inferredParams`, `lastQuestion`, `isClarifying`
+
 ### Flujo de Interacción
 
 1. Usuario envía descripción del proyecto en el primer mensaje
@@ -146,17 +164,17 @@ archssistant/
 ├── .gitignore
 ├── .env                          (creado por usuario, no en Git)
 ├── .env.example
+├── requirements.txt
+├── diagrama de componentes.png
 │
 ├── public/                       (Frontend)
 │   ├── index.html
 │   ├── script.js
 │   └── style.css
 │
-└── python_backend/              (Backend)
+└── python_backend/               (Backend)
     ├── main.py
-    ├── requirements.txt
-    ├── .env.example
-    ├── .gitignore
+  ├── .gitignore
     │
     └── server/
         ├── __init__.py
