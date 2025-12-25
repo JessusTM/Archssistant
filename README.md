@@ -328,6 +328,37 @@ Notas:
 - `Moderada` y `Moderado` se tratan igual (3); `Alta` y `Alto` se tratan igual (4).
 - `Grande` y `Alto` se mapean ambos a 4 para `teamSize`.
 
+##### Plantilla JSON de arquitectura
+
+Si prefieres pensar en formato JSON, esta plantilla refleja 1:1 lo que se define en [python_backend/server/recommendation_engine/architecture_data.py](python_backend/server/recommendation_engine/architecture_data.py). Los valores deben ser exactamente los del catálogo.
+
+```json
+{
+  "name": "Nombre de la Arquitectura",
+  "complexity": "Baja | Moderada | Alta | Excelente",
+  "scalability": "Baja | Moderada | Alta | Excelente",
+  "teamExperience": "Baja | Moderada | Alta | Excelente",
+  "dataVolume": "Moderado | Alto | Excelente",
+  "teamSize": "Pequeño | Moderado | Grande | Alto",
+  "availability": "Baja | Moderada | Alta | Excelente",
+  "maintainability": "Baja | Moderada | Alta | Excelente",
+  "interoperability": "Baja | Moderada | Alta | Excelente"
+}
+```
+
+##### Valores por parámetro (lista explícita)
+
+- `complexity`: Baja, Moderada, Alta, Excelente
+- `scalability`: Baja, Moderada, Alta, Excelente
+- `teamExperience`: Baja, Moderada, Alta, Excelente
+- `dataVolume`: Moderado, Alto, Excelente
+- `teamSize`: Pequeño, Moderado, Grande, Alto
+- `availability`: Baja, Moderada, Alta, Excelente
+- `maintainability`: Baja, Moderada, Alta, Excelente
+- `interoperability`: Baja, Moderada, Alta, Excelente
+
+Al editar el archivo de Python, la sintaxis es de diccionario (no JSON), pero la estructura y valores son idénticos. Cualquier palabra fuera de este catálogo será ignorada por el cálculo de puntuación.
+
 ### Backend - Main Server (main.py)
 
 - FastAPI app con titulo 'Arch-Assistant' version '1.0.0'
