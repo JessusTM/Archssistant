@@ -254,7 +254,7 @@ Contiene lista `architectures` con 7 arquitecturas:
 Cada una tiene estos parámetros:
 - complexity, scalability, teamExperience, dataVolume, teamSize, availability, maintainability, interoperability
 
-- `VALUE_MAP`: diccionario con la escala numérica (1-5) usada para comparar respuestas. Edita aquí si cambias las etiquetas de parámetros.
+- `VALUE_MAP`: diccionario con la escala numérica (1-5) usada para comparar respuestas. Edita aquí si cambias las etiquetas de parámetros. Puedes modificar el puntaje de cada parametro.
 
 #### engine.py
 - Función `get_recommendation(user_answers)`
