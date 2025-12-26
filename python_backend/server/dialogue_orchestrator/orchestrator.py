@@ -1,4 +1,18 @@
-# server/dialogue_orchestrator/orchestrator.py
+"""Orquestador de diálogo: controla el flujo conversacional end-to-end.
+
+Responsabilidades principales:
+- Mantener un `state` derivado del historial (parámetros inferidos, última pregunta, fase).
+- Interpretar respuestas del usuario para inferir parámetros de arquitectura.
+- Decidir cuándo pasar de entrevista (recopilación) a recomendación.
+- En fase final, generar recomendaciones y enriquecerlas con descripciones del LLM.
+
+Estructuras clave:
+- `history`: lista de mensajes (dict-like) en orden cronológico. Se espera que cada
+    elemento tenga `role` y `content`. El orquestador puede mutar `history` (p.ej.
+    etiquetar el primer mensaje como `user_description`).
+- `state`: dict persistible que el frontend vuelve a enviar dentro del historial
+    (usualmente embebido en el último mensaje del asistente).
+"""
 
 from server.llm_service import interpret_user_answer, generate_next_question, generate_final_descriptions
 from server.recommendation_engine import get_recommendation
@@ -10,9 +24,28 @@ ALL_PARAMETERS = [
 
 
 def get_conversation_state(history):
-    """
-    Extrae el estado actual de la conversación del historial.
-    El estado contiene los parámetros ya inferidos y el último estado conocido.
+    """Extrae el estado conversacional desde el historial.
+
+    Args:
+        history (list[dict]): Historial completo. Se recorre desde el final buscando
+            el último mensaje con `role == 'assistant'` y una clave `state`.
+
+    Behavior:
+        - Si encuentra un mensaje del asistente con `state`, devuelve ese estado.
+        - Si no hay estado previo (p.ej. primera interacción), devuelve un estado
+          inicial con:
+            - `inferredParams`: dict vacío (parámetro -> clasificación)
+            - `lastQuestion`: None
+            - `isClarifying`: False
+            - `status`: "interviewing"
+
+    Returns:
+        dict: Estado conversacional actual (persistible) usado por `handle_message`.
+
+    Notes:
+        Este método asume que el frontend devuelve el `state` adjunto en los mensajes
+        del asistente (ver `public/script.js`). Si el estado se pierde, el sistema
+        reinicia una entrevista nueva.
     """
     last_assistant_message = None
     for msg in reversed(history):
@@ -37,9 +70,44 @@ def get_conversation_state(history):
 
 
 async def handle_message(history):
-    """
-    Maneja un mensaje del usuario y retorna la respuesta del asistente.
-    Este es el punto de entrada principal del orquestador.
+    """Punto de entrada principal del orquestador: procesa el historial y responde.
+
+    Args:
+        history (list[dict]): Historial de conversación. Se espera que el último
+            mensaje corresponda al usuario actual (`role == 'user'` típicamente).
+            Cada elemento debe proveer al menos `content`.
+
+    Behavior:
+        - Determina la descripción inicial del proyecto:
+            - Busca un mensaje con `role == 'user_description'`, o
+            - Usa el contenido del primer mensaje como fallback.
+        - Si es la primera interacción (`len(history) == 1`), muta el historial para
+          marcar el primer mensaje como `user_description`.
+        - Fase "interviewing":
+            - Si existe `state.lastQuestion`, interpreta la respuesta del usuario
+              contra esa pregunta para inferir un parámetro.
+            - Si la interpretación es "UNCERTAIN", entra en modo clarificación.
+            - Si ya hay al menos 5 parámetros inferidos, cambia a "recommending".
+            - Caso contrario, genera la siguiente pregunta.
+        - Fase "recommending":
+            - Calcula las arquitecturas recomendadas con `get_recommendation`.
+            - Pide al LLM descripciones/justificaciones y las mezcla con la data base.
+            - Marca el estado como "finished".
+        - Fase final:
+            - Devuelve un mensaje de cierre y mantiene el estado.
+
+    Returns:
+        dict: Objeto serializable con:
+            - `response`: mensaje del asistente (y opcionalmente `recommendation`)
+            - `state`: el estado actualizado (para persistir en el frontend)
+
+    Side Effects:
+        - Puede mutar `history` (p.ej. para etiquetar `user_description`).
+        - Imprime logs de depuración en fase de recomendación.
+
+    Raises:
+        Propaga excepciones provenientes de los servicios LLM o del motor de
+        recomendación. En el servidor HTTP, estas se traducen a errores 4xx/5xx.
     """
     user_message = history[-1]
     

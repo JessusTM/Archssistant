@@ -1,4 +1,12 @@
-// public/script.js
+/**
+ * Frontend de Arch-Assistant.
+ *
+ * Responsabilidades:
+ * - Gestionar el input del usuario y renderizar mensajes en el chat.
+ * - Enviar el historial al backend (`POST /api/chat`) y persistir estado local.
+ * - Mostrar progreso de inferencia (parámetros inferidos) y recomendaciones finales.
+ * - Renderizar un fondo de partículas en canvas.
+ */
 
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -85,6 +93,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    /**
+     * Agrega un mensaje al contenedor de chat.
+     *
+     * @param {'user'|'assistant'} sender - Quién envía el mensaje.
+     * @param {string} htmlContent - Contenido HTML ya preparado para insertar.
+     *   Importante: si contiene texto proveniente del usuario, debe venir escapado
+     *   con `escapeHtml` para evitar inyección de HTML.
+     *
+     * @returns {HTMLDivElement} El wrapper DOM del mensaje insertado.
+     */
     function appendMessage(sender, htmlContent) {
         const messageWrapper = document.createElement('div');
         messageWrapper.className = `chat-message ${sender}`;
@@ -124,11 +142,29 @@ document.addEventListener('DOMContentLoaded', () => {
         return messageWrapper;
     }
     
+    /**
+     * Muestra un indicador de “escribiendo…” del asistente.
+     *
+     * @returns {HTMLDivElement} Nodo DOM del mensaje que contiene el indicador.
+     *   Se usa para removerlo cuando el backend responde.
+     */
     function appendTypingIndicator() {
         const html = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
         return appendMessage('assistant', html);
     }
 
+    /**
+     * Genera el HTML para renderizar las recomendaciones finales.
+     *
+     * @param {Array<Object>} recommendations - Lista de recomendaciones del backend.
+     *   Se espera que cada elemento tenga al menos:
+     *   - `name` (string)
+     *   - `description` (string, opcional)
+     *   - `justification` (string, opcional)
+     *   - y los parámetros técnicos (complexity, scalability, etc.).
+     *
+     * @returns {string} Fragmento HTML listo para insertar en un mensaje.
+     */
     function generateRecommendationHtml(recommendations) {
         markInferenceComplete();
         
@@ -182,12 +218,28 @@ document.addEventListener('DOMContentLoaded', () => {
         return html;
     }
 
+    /**
+     * Habilita o deshabilita el formulario de chat.
+     *
+     * @param {boolean} enabled - Si `true`, habilita input y botón y enfoca el input.
+     *   Si `false`, los deshabilita para prevenir envíos duplicados.
+     */
     function toggleForm(enabled) {
         elements.chatInput.disabled = !enabled;
         elements.sendBtn.disabled = !enabled;
         if(enabled) elements.chatInput.focus();
     }
 
+    /**
+     * Actualiza el panel de progreso de inferencia en base al `state` del backend.
+     *
+     * @param {Object} [state] - Estado enviado por el backend.
+     * @param {Object<string,string>} [state.inferredParams] - Parámetros inferidos.
+     * @param {Object} [state.lastQuestion] - Última pregunta generada.
+     * @param {string} [state.lastQuestion.parameter_to_infer] - Parámetro actualmente activo.
+     *
+     * @returns {void}
+     */
     function updateProgress(state) {
         if (!state?.inferredParams) {
             elements.progressCounter.textContent = '0/5';
@@ -224,6 +276,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    /**
+     * Actualiza el anillo circular de progreso usando stroke-dashoffset.
+     *
+     * @param {number} percent - Porcentaje 0..100.
+     * @returns {void}
+     */
     function setCircleProgress(percent) {
         if (!elements.progressRingCircle) return;
         const circumference = 60 * 2 * Math.PI;
@@ -231,20 +289,44 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.progressRingCircle.style.strokeDashoffset = offset;
     }
     
+    /**
+     * Marca visualmente el proceso de inferencia como completado.
+     *
+     * @returns {void}
+     */
     function markInferenceComplete() {
         document.getElementById('pulse-indicator')?.classList.add('completed');
     }
     
+    /**
+     * Escapa caracteres especiales para evitar inyección de HTML.
+     *
+     * @param {*} str - Valor a escapar. Si no es string, se retorna tal cual.
+     * @returns {*} Si `str` es string, retorna string escapado. En otro caso, retorna `str`.
+     */
     const escapeHtml = (str) => typeof str === 'string' 
         ? str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))
         : str;
     
+    /**
+     * Muestra un banner de estado temporal.
+     *
+     * @param {'error'|'info'|'success'|string} type - Tipo lógico. Actualmente no cambia estilos,
+     *   pero se conserva para extensibilidad.
+     * @param {string} message - Mensaje (HTML permitido). Si viene de entrada usuario, debe escaparse.
+     * @returns {void}
+     */
     function showStatus(type, message) {
         elements.statusBanner.innerHTML = '<div class="glass-shine"></div>' + message;
         elements.statusBanner.hidden = false;
         setTimeout(() => elements.statusBanner.hidden = true, 5000);
     }
     
+    /**
+     * Limpia y oculta el banner de estado.
+     *
+     * @returns {void}
+     */
     function clearStatus() {
         elements.statusBanner.hidden = true;
         elements.statusBanner.textContent = '';
@@ -254,12 +336,24 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.chatInput.focus();
 });
 
+/**
+ * Inicializa el fondo de partículas en un `<canvas>`.
+ *
+ * Busca un elemento con id `particle-canvas`. Si no existe, no hace nada.
+ *
+ * @returns {void}
+ */
 function initParticleBackground() {
     const canvas = document.getElementById('particle-canvas');
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
     
+    /**
+     * Ajusta el tamaño del canvas al viewport actual.
+     *
+     * @returns {void}
+     */
     function resizeCanvas() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -274,6 +368,11 @@ function initParticleBackground() {
             this.opacity = Math.random() * 0.5 + 0.2;
         }
         
+        /**
+         * Reinicia la partícula a una posición inicial (arriba del canvas).
+         *
+         * @returns {void}
+         */
         reset() {
             this.x = Math.random() * canvas.width;
             this.y = -10;
@@ -282,6 +381,12 @@ function initParticleBackground() {
             this.opacity = Math.random() * 0.5 + 0.2;
         }
         
+        /**
+         * Actualiza la posición de la partícula en el tiempo.
+         * Si sale del canvas por abajo, se reinicia.
+         *
+         * @returns {void}
+         */
         update() {
             this.y += this.speed;
             if (this.y > canvas.height) {
@@ -289,6 +394,11 @@ function initParticleBackground() {
             }
         }
         
+        /**
+         * Dibuja la partícula en el contexto 2D.
+         *
+         * @returns {void}
+         */
         draw() {
             ctx.fillStyle = `rgba(0, 245, 255, ${this.opacity})`;
             ctx.beginPath();
@@ -307,6 +417,11 @@ function initParticleBackground() {
         particles.push(new Particle());
     }
     
+    /**
+     * Dibuja líneas de conexión entre partículas cercanas.
+     *
+     * @returns {void}
+     */
     function drawConnections() {
         for (let i = 0; i < particles.length; i++) {
             for (let j = i + 1; j < particles.length; j++) {
@@ -326,6 +441,14 @@ function initParticleBackground() {
         }
     }
     
+    /**
+     * Loop de animación principal.
+     *
+     * Limpia el canvas, actualiza y dibuja partículas, luego dibuja conexiones.
+     * Se auto-programa con `requestAnimationFrame`.
+     *
+     * @returns {void}
+     */
     function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         

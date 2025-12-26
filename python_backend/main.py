@@ -1,4 +1,14 @@
-# main.py - Servidor principal con FastAPI
+"""Servidor principal (FastAPI) para Arch-Assistant.
+
+Este módulo expone:
+- Un endpoint HTTP `POST /api/chat` para gestionar la conversación.
+- El montaje de archivos estáticos (frontend) desde `public/`.
+
+Flujo general:
+1) El frontend envía un historial de conversación (lista de mensajes).
+2) Este servidor delega el procesamiento al orquestador (`handle_message`).
+3) Devuelve un objeto JSON con `response` y `state` para que el frontend actualice UI.
+"""
 
 import os
 from fastapi import FastAPI, HTTPException
@@ -26,13 +36,51 @@ public_dir = os.path.join(os.path.dirname(__file__), '..', 'public')
 
 
 class ChatRequest(BaseModel):
+    """Modelo de request para el endpoint de chat.
+
+    Attributes:
+        history: Lista ordenada de mensajes de la conversación. Cada mensaje es un
+            diccionario (o estructura equivalente) con al menos:
+            - `role`: str (p.ej. "user", "assistant", o "user_description")
+            - `content`: str (texto del mensaje)
+
+            El orquestador también puede adjuntar `state` en mensajes del asistente.
+            Este backend valida que `history` sea una lista; el contenido interno se
+            valida de forma tolerante en el orquestador.
+    """
+
     history: list
 
 
 @app.post('/api/chat')
 async def chat(request: ChatRequest):
-    """
-    Maneja un mensaje de usuario y retorna la respuesta del asistente.
+    """Procesa el último mensaje del usuario y responde como asistente.
+
+    Args:
+        request: Cuerpo JSON validado por Pydantic. Debe contener `history` como una
+            lista con el historial completo de la conversación en orden cronológico.
+            Se asume que el último elemento corresponde al mensaje actual del usuario.
+
+    Behavior:
+        - Valida que `request.history` sea una lista.
+        - Delega el flujo conversacional al orquestador `handle_message(history)`.
+        - Traduce errores de autenticación de LLM a un `HTTP 401`.
+        - En errores inesperados, responde con `HTTP 500`.
+
+    Returns:
+        dict: Respuesta JSON con la forma:
+            {
+              "response": {"role": "assistant", "content": "...", ...},
+              "state": {"inferredParams": {...}, "status": "...", ...}
+            }
+            El contenido exacto depende del estado de la entrevista (preguntas) o de
+            la fase de recomendación (incluye `recommendation`).
+
+    Raises:
+        HTTPException:
+            - 400 si `history` no es una lista.
+            - 401 si falta/es inválida la API key del proveedor LLM.
+            - 500 para fallos internos no controlados.
     """
     try:
         if not isinstance(request.history, list):

@@ -1,4 +1,11 @@
-# server/recommendation_engine/architecture_data.py
+"""Datos base del motor de recomendación.
+
+Contiene:
+- `architectures`: lista de arquitecturas conocidas con sus valores categóricos por parámetro.
+- `VALUE_MAP`: mapeo de valores categóricos a una escala numérica para comparación.
+
+Estos datos se consumen en `recommendation_engine.engine.get_recommendation`.
+"""
 
 architectures = [
     {
