@@ -1,17 +1,6 @@
 # server/recommendation_engine/engine.py
 
-from .architecture_data import architectures
-
-VALUE_MAP = {
-    'Baja': 1,
-    'Pequeño': 2,
-    'Moderado': 3,
-    'Moderada': 3,
-    'Alta': 4,
-    'Grande': 4,
-    'Alto': 4,
-    'Excelente': 5
-}
+from .architecture_data import architectures, VALUE_MAP
 
 def get_recommendation(user_answers):
     """

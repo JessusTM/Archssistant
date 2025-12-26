@@ -79,3 +79,15 @@ architectures = [
         'interoperability': 'Excelente'
     }
 ]
+
+# Mapeo de valores (escala de 1-5) para comparar respuestas del usuario
+VALUE_MAP = {
+    'Baja': 1,
+    'Pequeño': 2,
+    'Moderado': 3,
+    'Moderada': 3,
+    'Alta': 4,
+    'Grande': 4,
+    'Alto': 4,
+    'Excelente': 5
+}
