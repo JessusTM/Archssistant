@@ -17,6 +17,7 @@ Nota técnica:
 import requests
 import json
 import os
+from pathlib import Path
 
 
 class ApiKeyError(Exception):
@@ -29,6 +30,25 @@ class ApiKeyError(Exception):
     pass
 
 API_URL = 'https://api.deepseek.com/v1/chat/completions'
+
+# Directorio donde se encuentran los prompts
+PROMPT_DIR = Path(__file__).parent / 'prompt'
+
+def load_prompt(prompt_filename):
+    """Carga un prompt desde un archivo de texto.
+    
+    Args:
+        prompt_filename (str): Nombre del archivo de prompt (ej: 'interpret_user_answer_prompt.txt')
+    
+    Returns:
+        str: Contenido del prompt
+    
+    Raises:
+        FileNotFoundError: Si el archivo de prompt no existe
+    """
+    prompt_path = PROMPT_DIR / prompt_filename
+    with open(prompt_path, 'r', encoding='utf-8') as f:
+        return f.read()
 
 async def call_api(messages, temperature=0.2):
     """Realiza una llamada a la API de DeepSeek y parsea el contenido como JSON.
@@ -127,38 +147,12 @@ async def interpret_user_answer(question_text, user_answer, parameter_to_infer):
         ApiKeyError / Exception: Propagados desde `call_api`.
     """
 
-    system_prompt = f"""
-<role>
-Eres Classifier-7, un sistema de análisis semántico ultrapreciso. Tu única función es la clasificación de texto. No eres conversacional. No ofreces contexto adicional. Eres una máquina de precisión.
-</role>
-
-<context>
-  <question_asked_to_user>{question_text}</question_asked_to_user>
-  <user_response>{user_answer}</user_response>
-  <parameter_to_classify>{parameter_to_infer}</parameter_to_classify>
-</context>
-
-<instructions>
-  1.  Analiza la <user_response> en el contexto de la <question_asked_to_user>.
-  2.  Clasifica el <parameter_to_classify> en una de las categorías permitidas.
-  3.  Si la respuesta del usuario es una negación directa de conocimiento ("no sé", "no estoy seguro") o es demasiado ambigua para tomar una decisión informada, DEBES usar la clasificación "UNCERTAIN".
-  4.  Determina un nivel de confianza para tu clasificación (high, medium, low).
-</instructions>
-
-<allowed_classifications>
-  - Para 'teamSize': ["Pequeño", "Moderado", "Grande", "Alto"]
-  - Para los demás parámetros: ["Baja", "Moderada", "Alta", "Excelente"]
-  - Para incertidumbre: ["UNCERTAIN"]
-</allowed_classifications>
-
-<output_format>
-  Responde EXCLUSIVAMENTE con un objeto JSON válido. NO incluyas NADA más. La estructura OBLIGATORIA es:
-  {{
-    "classification": "VALOR_CLASIFICADO",
-    "confidence": "high|medium|low",
-    "reasoning": "Una frase muy corta explicando por qué elegiste esa clasificación."
-  }}
-</output_format>"""
+    prompt_template = load_prompt('interpret_user_answer_prompt.txt')
+    system_prompt = prompt_template.format(
+        question_text=question_text,
+        user_answer=user_answer,
+        parameter_to_infer=parameter_to_infer
+    )
 
     messages = [{'role': 'system', 'content': system_prompt}]
     return await call_api(messages, 0.0)
@@ -192,44 +186,13 @@ async def generate_next_question(history, remaining_params, last_interpretation,
         for msg in history[-6:]
     ]
 
-    system_prompt = f"""
-<role>
-Eres 'Arch-Strategist', el núcleo conversacional de Arch-Assistant. Tu especialidad es la psicología de la ingeniería de requisitos. Sabes que hacer la pregunta correcta en el momento correcto es la clave. Eres un guía experto, no un interrogador.
-</role>
-
-<task>
-Tu tarea es generar la siguiente interacción con el usuario. Analiza el flag 'isClarificationNeeded'.
-
-<clarification_logic>
-  Si 'isClarificationNeeded' es true, significa que el usuario no supo responder la última pregunta. Tu misión es ayudarlo.
-  1.  Empatiza con una frase corta (ej: "No hay problema, lo deduciremos juntos.").
-  2.  Formula una pregunta de clarificación mucho más simple sobre el MISMO parámetro, usando analogías o ejemplos concretos.
-  (Ej. si el parámetro era 'availability', pregunta: "Pensemos en el impacto: si la aplicación se cae por una hora, ¿es una simple molestia o una pérdida crítica de negocio?").
-</clarification_logic>
-
-<normal_flow_logic>
-  Si 'isClarificationNeeded' es false, procede con el flujo normal.
-  1.  Si 'lastInterpretation' existe, confirma amigablemente tu entendimiento. (Ej: "Entendido, un equipo pequeño. Eso nos da agilidad.").
-  2.  Analiza los 'remainingParams' y elige el más estratégico a preguntar ahora (prioriza: Escala > Equipo > Calidad).
-  3.  Formula una pregunta abierta, amigable y no técnica sobre ese nuevo parámetro.
-</normal_flow_logic>
-</task>
-
-<context>
-  <history>{json.dumps(simplified_history)}</history>
-  <remainingParams>{', '.join(remaining_params)}</remainingParams>
-  <lastInterpretation>{json.dumps(last_interpretation)}</lastInterpretation>
-  <isClarificationNeeded>{is_clarification_needed}</isClarificationNeeded>
-</context>
-
-<output_format>
-  Tu respuesta DEBE SER EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura:
-  {{
-    "parameter_to_infer": "parametro_de_la_nueva_pregunta", 
-    "question_for_user": "texto_de_la_nueva_pregunta_solamente",
-    "full_response_text": "texto_completo_con_confirmacion_y_pregunta_o_clarificacion"
-  }}
-</output_format>"""
+    prompt_template = load_prompt('generate_next_question_prompt.txt')
+    system_prompt = prompt_template.format(
+        history=json.dumps(simplified_history),
+        remaining_params=', '.join(remaining_params),
+        last_interpretation=json.dumps(last_interpretation),
+        is_clarification_needed=is_clarification_needed
+    )
 
     messages = [{'role': 'system', 'content': system_prompt}]
     return await call_api(messages, 0.6)
@@ -267,40 +230,14 @@ async def generate_final_descriptions(project_description, recommendations, hist
 
     recommendations_names = ', '.join([rec['name'] for rec in recommendations])
 
-    system_prompt = f"""
-<role>
-Eres 'Arch-Describer', un experto en arquitectura de software que sabe comunicar decisiones técnicas de forma clara y accesible.
-</role>
-
-<task>
-Para cada una de las siguientes arquitecturas recomendadas, proporciona:
-1. Una descripción clara (2-3 líneas) de qué es y cómo funciona.
-2. Una justificación técnica (2-3 líneas) de por qué es adecuada para el proyecto del usuario.
-
-El proyecto del usuario es: "{project_description}"
-
-Las arquitecturas a describir son: {recommendations_names}
-
-IMPORTANTE: Las claves del JSON deben ser EXACTAMENTE los nombres de las arquitecturas proporcionados.
-</task>
-
-<output_format>
-Responde EXCLUSIVAMENTE con un objeto JSON válido. La estructura OBLIGATORIA es:
-{{
-  "{recommendations[0]['name']}": {{
-    "description": "Descripción clara de la arquitectura",
-    "justification": "Por qué es adecuada para este proyecto"
-  }},
-  "{recommendations[1]['name'] if len(recommendations) > 1 else 'Arquitectura 2'}": {{
-    "description": "Descripción clara de la arquitectura",
-    "justification": "Por qué es adecuada para este proyecto"
-  }},
-  "{recommendations[2]['name'] if len(recommendations) > 2 else 'Arquitectura 3'}": {{
-    "description": "Descripción clara de la arquitectura",
-    "justification": "Por qué es adecuada para este proyecto"
-  }}
-}}
-</output_format>"""
+    prompt_template = load_prompt('generate_final_descriptions_prompt.txt')
+    system_prompt = prompt_template.format(
+        project_description=project_description,
+        recommendations_names=recommendations_names,
+        architecture_1_name=recommendations[0]['name'] if len(recommendations) > 0 else 'Arquitectura 1',
+        architecture_2_name=recommendations[1]['name'] if len(recommendations) > 1 else 'Arquitectura 2',
+        architecture_3_name=recommendations[2]['name'] if len(recommendations) > 2 else 'Arquitectura 3'
+    )
 
     messages = [{'role': 'system', 'content': system_prompt}]
 
