@@ -17,8 +17,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from server.dialogue_orchestrator import handle_message
-from server.llm_service.llm_service import ApiKeyError
+from python_backend.server.dialogue_orchestrator import handle_message
+from python_backend.server.llm_service.llm_service import ApiKeyError
 
 load_dotenv()
 
@@ -32,7 +32,7 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
-public_dir = os.path.join(os.path.dirname(__file__), '..', 'public')
+public_dir = os.path.join(os.path.dirname(__file__), 'public')
 
 
 class ChatRequest(BaseModel):
