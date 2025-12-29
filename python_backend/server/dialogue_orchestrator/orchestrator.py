@@ -14,8 +14,11 @@ Estructuras clave:
     (usualmente embebido en el último mensaje del asistente).
 """
 
-from server.llm_service import interpret_user_answer, generate_next_question, generate_final_descriptions
-from server.recommendation_engine import get_recommendation
+from ..llm_service import interpret_user_answer, generate_next_question, generate_final_descriptions
+from ..recommendation_engine import get_recommendation
+from python_backend.config import get_logger
+
+logger = get_logger(__name__)
 
 ALL_PARAMETERS = [
     'complexity', 'scalability', 'teamExperience', 'dataVolume',
