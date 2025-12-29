@@ -54,7 +54,7 @@ class InternalServerError(GatewayError):
         super().__init__(500, detail)
 
 
-async def process_chat_message(request: ChatRequest) -> ChatResponse:
+def process_chat_message(request: ChatRequest) -> ChatResponse:
     """Procesa un mensaje de chat a través del Gateway.
 
     Este método actúa como punto de entrada centralizado para todas las solicitudes
@@ -92,7 +92,7 @@ async def process_chat_message(request: ChatRequest) -> ChatResponse:
         logger.debug(
             f"[{request_id}] Delegando a Dialogue Orchestrator..."
         )
-        result = await handle_message(request.history)
+        result = handle_message(request.history)
         
         # 3. LOGGING DE RESPUESTA
         logger.info(

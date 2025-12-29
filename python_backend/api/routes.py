@@ -27,7 +27,7 @@ router = APIRouter(prefix='/api', tags=['chat'])
 
 
 @router.post('/chat', response_model=ChatResponse)
-async def chat(request: ChatRequest) -> Dict[str, Any]:
+def chat(request: ChatRequest) -> Dict[str, Any]:
     """Endpoint de chat para procesamiento de mensajes conversacionales.
 
     Este endpoint actúa como punto de entrada HTTP para solicitudes de chat.
@@ -59,7 +59,7 @@ async def chat(request: ChatRequest) -> Dict[str, Any]:
     """
     try:
         # Delegar al API Gateway para procesamiento completo
-        result = await process_chat_message(request)
+        result = process_chat_message(request)
         return result
     
     except ValidationError as ve:

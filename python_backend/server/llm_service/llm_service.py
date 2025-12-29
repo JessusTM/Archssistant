@@ -50,7 +50,7 @@ def load_prompt(prompt_filename):
     with open(prompt_path, 'r', encoding='utf-8') as f:
         return f.read()
 
-async def call_api(messages, temperature=0.2):
+def call_api(messages, temperature=0.2):
     """Realiza una llamada a la API de DeepSeek y parsea el contenido como JSON.
 
     Args:
@@ -74,8 +74,7 @@ async def call_api(messages, temperature=0.2):
         Exception: Para errores de red, respuestas no-OK, ausencia de contenido, o JSON inválido.
 
     Notes:
-        Aunque la función es `async`, la llamada HTTP usa `requests.post` (bloqueante).
-        Si se ejecuta bajo un loop asíncrono con alta concurrencia, puede bloquear workers.
+        Esta función es síncrona y usa `requests.post` (bloqueante).
     """
 
     api_key = os.getenv('DEEPSEEK_API_KEY')
@@ -123,7 +122,7 @@ async def call_api(messages, temperature=0.2):
         raise Exception(f"Error al llamar a la API: {str(error)}")
 
 
-async def interpret_user_answer(question_text, user_answer, parameter_to_infer):
+def interpret_user_answer(question_text, user_answer, parameter_to_infer):
     """Clasifica la respuesta del usuario para un parámetro específico.
 
     Args:
@@ -155,10 +154,10 @@ async def interpret_user_answer(question_text, user_answer, parameter_to_infer):
     )
 
     messages = [{'role': 'system', 'content': system_prompt}]
-    return await call_api(messages, 0.0)
+    return call_api(messages, 0.0)
 
 
-async def generate_next_question(history, remaining_params, last_interpretation, is_clarification_needed=False):
+def generate_next_question(history, remaining_params, last_interpretation, is_clarification_needed=False):
     """Genera la siguiente interacción (confirmación + pregunta o clarificación).
 
     Args:
@@ -195,10 +194,10 @@ async def generate_next_question(history, remaining_params, last_interpretation,
     )
 
     messages = [{'role': 'system', 'content': system_prompt}]
-    return await call_api(messages, 0.6)
+    return call_api(messages, 0.6)
 
 
-async def generate_final_descriptions(project_description, recommendations, history):
+def generate_final_descriptions(project_description, recommendations, history):
     """Genera descripción y justificación por arquitectura recomendada.
 
     Args:
@@ -242,7 +241,7 @@ async def generate_final_descriptions(project_description, recommendations, hist
     messages = [{'role': 'system', 'content': system_prompt}]
 
     try:
-        result = await call_api(messages, 0.6)
+        result = call_api(messages, 0.6)
         print(f"DEBUG LLM: Descripciones generadas: {result}")
         return result
     except Exception as e:

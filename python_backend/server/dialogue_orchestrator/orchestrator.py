@@ -72,7 +72,7 @@ def get_conversation_state(history):
     }
 
 
-async def handle_message(history):
+def handle_message(history):
     """Punto de entrada principal del orquestador: procesa el historial y responde.
 
     Args:
@@ -139,7 +139,7 @@ async def handle_message(history):
             parameter_to_infer = state['lastQuestion'].get('parameter_to_infer')
             question_text = state['lastQuestion'].get('question_text')
             
-            interpretation_result = await interpret_user_answer(
+            interpretation_result = interpret_user_answer(
                 question_text,
                 user_message.get('content'),
                 parameter_to_infer
@@ -160,7 +160,7 @@ async def handle_message(history):
             # Generar la siguiente pregunta
             remaining_params = [p for p in ALL_PARAMETERS if p not in state['inferredParams']]
             
-            next_question = await generate_next_question(
+            next_question = generate_next_question(
                 history,
                 remaining_params,
                 interpretation_result,
@@ -202,7 +202,7 @@ async def handle_message(history):
         print(f"DEBUG: Arquitecturas: {[r['name'] for r in recommendations]}")
         
         # Generar descripciones para cada arquitectura recomendada
-        descriptions = await generate_final_descriptions(
+        descriptions = generate_final_descriptions(
             project_description,
             recommendations,
             history
