@@ -1,29 +1,32 @@
 """Servidor principal (FastAPI) para Arch-Assistant.
 
-Este módulo expone:
-- Un endpoint HTTP `POST /api/chat` para gestionar la conversación.
-- El montaje de archivos estáticos (frontend) desde `public/`.
+Este es el punto de entrada de la aplicación. Configura la aplicación FastAPI,
+registra los routers de la API, habilita CORS y monta los archivos estáticos
+del frontend.
 
-Flujo general:
-1) El frontend envía un historial de conversación (lista de mensajes).
-2) Este servidor delega el procesamiento al orquestador (`handle_message`).
-3) Devuelve un objeto JSON con `response` y `state` para que el frontend actualice UI.
+La lógica de negocio y los endpoints están organizados en módulos separados
+para mantener el código limpio, mantenible y escalable.
 """
 
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from python_backend.server.dialogue_orchestrator import handle_message
-from python_backend.server.llm_service.llm_service import ApiKeyError
+from python_backend.api import router
 
+# Cargar variables de entorno
 load_dotenv()
 
-app = FastAPI(title='Arch-Assistant', version='1.0.0')
+# Crear instancia de la aplicación
+app = FastAPI(
+    title='Arch-Assistant',
+    version='1.0.0',
+    description='API para el asistente de recomendación de arquitecturas de software'
+)
 
+# Configurar CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=['*'],
@@ -32,77 +35,13 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
+# Registrar routers de la API
+app.include_router(router)
+
+# Configurar directorio de archivos estáticos
 public_dir = os.path.join(os.path.dirname(__file__), 'public')
 
-
-class ChatRequest(BaseModel):
-    """Modelo de request para el endpoint de chat.
-
-    Attributes:
-        history: Lista ordenada de mensajes de la conversación. Cada mensaje es un
-            diccionario (o estructura equivalente) con al menos:
-            - `role`: str (p.ej. "user", "assistant", o "user_description")
-            - `content`: str (texto del mensaje)
-
-            El orquestador también puede adjuntar `state` en mensajes del asistente.
-            Este backend valida que `history` sea una lista; el contenido interno se
-            valida de forma tolerante en el orquestador.
-    """
-
-    history: list
-
-
-@app.post('/api/chat')
-async def chat(request: ChatRequest):
-    """Procesa el último mensaje del usuario y responde como asistente.
-
-    Args:
-        request: Cuerpo JSON validado por Pydantic. Debe contener `history` como una
-            lista con el historial completo de la conversación en orden cronológico.
-            Se asume que el último elemento corresponde al mensaje actual del usuario.
-
-    Behavior:
-        - Valida que `request.history` sea una lista.
-        - Delega el flujo conversacional al orquestador `handle_message(history)`.
-        - Traduce errores de autenticación de LLM a un `HTTP 401`.
-        - En errores inesperados, responde con `HTTP 500`.
-
-    Returns:
-        dict: Respuesta JSON con la forma:
-            {
-              "response": {"role": "assistant", "content": "...", ...},
-              "state": {"inferredParams": {...}, "status": "...", ...}
-            }
-            El contenido exacto depende del estado de la entrevista (preguntas) o de
-            la fase de recomendación (incluye `recommendation`).
-
-    Raises:
-        HTTPException:
-            - 400 si `history` no es una lista.
-            - 401 si falta/es inválida la API key del proveedor LLM.
-            - 500 para fallos internos no controlados.
-    """
-    try:
-        if not isinstance(request.history, list):
-            raise HTTPException(
-                status_code=400,
-                detail='El historial de la conversación es obligatorio y debe ser un array.'
-            )
-        
-        result = await handle_message(request.history)
-        return result
-    
-    except ApiKeyError as e:
-        raise HTTPException(status_code=401, detail=str(e))
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(
-            status_code=500,
-            detail='Error interno al procesar el mensaje.'
-        )
-
-
+# Montar archivos estáticos del frontend
 app.mount(
     '/',
     StaticFiles(directory=public_dir, html=True),
