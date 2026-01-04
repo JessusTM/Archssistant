@@ -12,3 +12,13 @@ class GatewayError(Exception):
         self.status_code    = status_code
         self.detail         = detail
         super().__init__(detail)
+
+
+class ApiKeyError(Exception):
+    """
+    Configuration/authentication error related to the LLM API key.
+    
+    Used to distinguish credential failures (e.g. absence of DEEPSEEK_API_KEY
+    or 401 authentication) from network/server errors. The HTTP API translates this to 401.
+    """
+    pass

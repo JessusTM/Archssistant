@@ -42,7 +42,7 @@ class ChatRequest(BaseModel):
     )
 
     history: List[Dict[str, Any]] = Field(
-        ...,
+        ..., # Required Field
         description = "Historial completo de la conversación en orden cronológico",
         min_length  = 0
     )
@@ -74,10 +74,10 @@ class ChatResponse(BaseModel):
     )
 
     response: Dict[str, Any] = Field(
-        ...,  # Required field marker - means "this field must be provided"
+        ..., # Required Field
         description = "Respuesta del asistente con role, content y datos adicionales"
     )
     state: Dict[str, Any] = Field(
-        ...,
+        ..., # Required Field
         description = "Estado de la conversación con inferredParams y status"
     )

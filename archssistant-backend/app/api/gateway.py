@@ -8,9 +8,8 @@
 from datetime import datetime
 
 from .models import ChatRequest, ChatResponse
-from .exceptions import GatewayError
-from ..server.dialogue_orchestrator import handle_message
-from ..server.llm_service.llm_service import ApiKeyError
+from .exceptions import GatewayError, ApiKeyError
+from ..services.dialogue_orchestrator import DialogueOrchestrator
 from ..config import get_logger
 
 
@@ -24,6 +23,7 @@ class ApiGateway:
     def __init__(self):
         """Initialize the API Gateway with required dependencies."""
         self.logger = get_logger(__name__)
+        self.orchestrator = DialogueOrchestrator()
     
     def process_chat_message(self, request: ChatRequest) -> ChatResponse:
         """Processes a chat message through the Gateway.
@@ -60,7 +60,7 @@ class ApiGateway:
             self.logger.debug(
                 f"[{request_id}] Delegating to the Dialogue Orchestrator..."
             )
-            result = handle_message(request.history)
+            result = self.orchestrator.handle_message(request.history)
             
             # 3. Logging of response
             self.logger.info(
@@ -74,7 +74,7 @@ class ApiGateway:
             self.logger.error(f"[{request_id}] LLM authentication error: {str(ake)}")
             raise GatewayError(
                 status_code = 401,
-                detail      = f"Authentication error with the LLM provider: {str(ake)}"
+                detail      = f"Error de autenticación con el proveedor LLM: {str(ake)}"
             )
         
         except Exception as e:
@@ -83,7 +83,7 @@ class ApiGateway:
             )
             raise GatewayError(
                 status_code = 500,
-                detail      = "Internal error processing the chat message."
+                detail      = "Error interno al procesar el mensaje de chat."
             )
     
     def _validate_chat_request(self, request: ChatRequest) -> None:
