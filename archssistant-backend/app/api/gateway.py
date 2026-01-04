@@ -1,157 +1,120 @@
-"""API Gateway: componente de enrutamiento, validación y manejo de errores.
+"""API Gateway: Routing Component
 
-Este módulo implementa el patrón API Gateway, actuando como punto de entrada
-centralizado que:
-- Valida y normaliza las solicitudes entrantes
-- Registra eventos y errores (logging)
-- Maneja errores de manera consistente
-- Delega la lógica de negocio a servicios especializados
-- Proporciona respuestas normalizadas
-
-Esta capa permite separar las políticas transversales (validación, logging,
-autenticación) de la lógica de negocio específica del orquestador.
+- Validates and normalizes incoming requests
+- Delegates business logic to specialized services
+- Provides normalized responses
 """
 
 from typing import Dict, Any
 from datetime import datetime
 
 from .models import ChatRequest, ChatResponse
+from .exceptions import GatewayError
 from ..server.dialogue_orchestrator import handle_message
 from ..server.llm_service.llm_service import ApiKeyError
 from ..config import get_logger
 
-# Obtener logger desde configuración centralizada
+
 logger = get_logger(__name__)
 
 
-class GatewayError(Exception):
-    """Error base del Gateway para manejo de errores específicos."""
-    
-    def __init__(self, status_code: int, detail: str):
-        self.status_code = status_code
-        self.detail = detail
-        super().__init__(detail)
-
-
-class ValidationError(GatewayError):
-    """Error de validación de entrada."""
-    
-    def __init__(self, detail: str):
-        super().__init__(400, detail)
-
-
-class AuthenticationError(GatewayError):
-    """Error de autenticación (API keys, credenciales)."""
-    
-    def __init__(self, detail: str):
-        super().__init__(401, detail)
-
-
-class InternalServerError(GatewayError):
-    """Error interno del servidor."""
-    
-    def __init__(self, detail: str = "Error interno al procesar la solicitud"):
-        super().__init__(500, detail)
-
-
 def process_chat_message(request: ChatRequest) -> ChatResponse:
-    """Procesa un mensaje de chat a través del Gateway.
+    """Processes a chat message through the Gateway.
 
-    Este método actúa como punto de entrada centralizado para todas las solicitudes
-    de chat. Implementa las siguientes políticas transversales:
-
-    1. Validación de entrada
-    2. Logging de solicitud
-    3. Delegación al orquestador
-    4. Manejo de errores
-    5. Logging de respuesta
+    1. Validation of input
+    2. Logging of request
+    3. Delegation to the orchestrator
+    4. Error handling
+    5. Logging of response
 
     Args:
-        request: Objeto ChatRequest validado por Pydantic. Contiene el historial
-            completo de la conversación.
+        request: Validated ChatRequest by Pydantic. Contains the complete conversation history.
 
     Returns:
-        ChatResponse: Respuesta del sistema con mensaje y estado conversacional.
+        ChatResponse: Response from the system with message and conversational state.
 
     Raises:
-        ValidationError: Si la solicitud no cumple los requisitos mínimos.
-        AuthenticationError: Si hay problemas de autenticación (API keys).
-        InternalServerError: Si ocurre un error no controlado.
+        GatewayError: If an error occurs during processing.
+            - status_code 400: Validation error
+            - status_code 401: Authentication error
+            - status_code 500: Internal server error
     """
     request_id = f"{datetime.now().isoformat()}"
     
     try:
-        # 1. VALIDACIÓN DE ENTRADA
+        # 1. Validation of input
         _validate_chat_request(request)
         logger.info(
-            f"[{request_id}] Solicitud de chat recibida. "
-            f"Historial: {len(request.history)} mensajes."
+            f"[{request_id}] Chat request received. "
+            f"History: {len(request.history)} messages."
         )
         
-        # 2. DELEGACIÓN AL ORQUESTADOR
+        # 2. Delegation to the Orchestrator
         logger.debug(
-            f"[{request_id}] Delegando a Dialogue Orchestrator..."
+            f"[{request_id}] Delegating to the Dialogue Orchestrator..."
         )
         result = handle_message(request.history)
         
-        # 3. LOGGING DE RESPUESTA
+        # 3. Logging of response
         logger.info(
-            f"[{request_id}] Respuesta generada exitosamente. "
-            f"Estado: {result.get('state', {}).get('status', 'unknown')}"
+            f"[{request_id}] Response generated successfully. "
+            f"State: {result.get('state', {}).get('status', 'unknown')}"
         )
         
         return result
     
-    except ValidationError as ve:
-        logger.warning(f"[{request_id}] Error de validación: {ve.detail}")
-        raise
-    
     except ApiKeyError as ake:
-        logger.error(f"[{request_id}] Error de autenticación LLM: {str(ake)}")
-        raise AuthenticationError(
-            f"Error de autenticación con el proveedor LLM: {str(ake)}"
+        logger.error(f"[{request_id}] LLM authentication error: {str(ake)}")
+        raise GatewayError(
+            status_code = 401,
+            detail      = f"Authentication error with the LLM provider: {str(ake)}"
         )
     
     except Exception as e:
         logger.exception(
-            f"[{request_id}] Error interno no controlado: {str(e)}"
+            f"[{request_id}] Uncontrolled internal error: {str(e)}"
         )
-        raise InternalServerError(
-            "Error interno al procesar el mensaje de chat."
+        raise GatewayError(
+            status_code = 500,
+            detail      = "Internal error processing the chat message."
         )
 
 
 def _validate_chat_request(request: ChatRequest) -> None:
-    """Valida que la solicitud de chat cumpla los requisitos mínimos.
+    """Validates that the chat request meets the minimum requirements.
 
     Args:
-        request: Objeto ChatRequest a validar.
+        request: ChatRequest to validate.
 
     Raises:
-        ValidationError: Si la validación falla.
+        GatewayError: If validation fails (status_code=400).
     """
-    # Validar que history sea una lista
+    # Validate that history is a list
     if not isinstance(request.history, list):
-        raise ValidationError(
-            "El campo 'history' debe ser un array de mensajes."
+        raise GatewayError(
+            status_code = 400,
+            detail      = "The 'history' field must be an array of messages."
         )
     
-    # Validar que no esté vacía
+    # Validate that history is not empty
     if len(request.history) == 0:
-        raise ValidationError(
-            "El historial no puede estar vacío. Debe contener al menos un mensaje."
+        raise GatewayError(
+            status_code = 400,
+            detail      = "The history cannot be empty. It must contain at least one message."
         )
     
-    # Validar estructura básica de los mensajes
+    # Validate the basic structure of the messages
     for i, message in enumerate(request.history):
         if not isinstance(message, dict):
-            raise ValidationError(
-                f"Mensaje {i} no es un objeto: {type(message)}"
+            raise GatewayError(
+                status_code = 400,
+                detail      = f"Message {i} is not an object: {type(message)}"
             )
         
         if 'role' not in message or 'content' not in message:
-            raise ValidationError(
-                f"Mensaje {i} debe contener 'role' y 'content'."
+            raise GatewayError(
+                status_code = 400,
+                detail      = f"Message {i} must contain 'role' and 'content'."
             )
     
-    logger.debug(f"Validación de solicitud exitosa. {len(request.history)} mensajes válidos.")
+    logger.debug(f"Validation of request successful. {len(request.history)} valid messages.")

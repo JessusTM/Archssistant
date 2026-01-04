@@ -1,26 +1,16 @@
-"""Definición de rutas y endpoints de la API de Arch-Assistant.
+"""Definition of routes and endpoints of the Arch-Assistant API.
 
-Este módulo define los endpoints HTTP que expone la aplicación. Cada endpoint
-actúa como punto de entrada para solicitudes del cliente, delegando toda la
-validación y procesamiento al API Gateway.
-
-El API Gateway (gateway.py) es responsable de:
-- Validar las solicitudes entrantes
-- Registrar logs de eventos
-- Manejar errores de manera centralizada
-- Delegar la lógica de negocio a servicios especializados
+Define the HTTP endpoints that expose the application. Here, each endpoint
+acts as an entry point for client requests, delegating all validation and
+validation and processing to the API Gateway.
 """
 
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
 
 from .models import ChatRequest, ChatResponse
-from .gateway import (
-    process_chat_message,
-    ValidationError,
-    AuthenticationError,
-    InternalServerError
-)
+from .gateway import process_chat_message
+from .exceptions import GatewayError
 
 
 router = APIRouter(prefix='/api', tags=['chat'])
@@ -28,64 +18,48 @@ router = APIRouter(prefix='/api', tags=['chat'])
 
 @router.post('/chat', response_model=ChatResponse)
 def chat(request: ChatRequest) -> Dict[str, Any]:
-    """Endpoint de chat para procesamiento de mensajes conversacionales.
-
-    Este endpoint actúa como punto de entrada HTTP para solicitudes de chat.
-    Toda la lógica de validación, logging y procesamiento es delegada al
-    API Gateway (gateway.process_chat_message).
+    """
+    Entry point for chat requests. All validation, logging, and processing logic is delegated to the API Gateway.
 
     Args:
-        request: Cuerpo JSON validado por Pydantic (ChatRequest). Debe contener
-            `history` como una lista con el historial completo de la conversación
-            en orden cronológico.
+        request: Validated JSON body by Pydantic (ChatRequest). Must contain
+                `history` as a list with the complete conversation history
+                in chronological order.
 
     Returns:
-        ChatResponse: Respuesta JSON con:
-            - response: Mensaje del asistente
-            - state: Estado conversacional (parámetros inferidos, status, etc.)
+        ChatResponse: JSON response with:
+            - response  : Assistant message
+            - state     : Conversational state (inferred parameters, status, etc.)
 
     Raises:
         HTTPException:
-            - 400: Solicitud inválida (validación fallida)
-            - 401: Error de autenticación (API key inválida del LLM)
-            - 500: Error interno del servidor
+            - 400: Invalid request (validation failed)
+            - 401: Authentication error (invalid API key for LLM)
+            - 500: Internal server error
 
     Notes:
-        Esta función actúa como adaptador HTTP que:
-        1. Recibe la solicitud HTTP validada por FastAPI/Pydantic
-        2. Delega al Gateway para procesamiento completo
-        3. Convierte excepciones del Gateway a HTTPException
-        4. Devuelve respuesta normalizada
+        This function acts as an HTTP adapter that:
+        1. Receives the validated HTTP request by FastAPI/Pydantic
+        2. Delegates to the Gateway for complete processing
+        3. Converts Gateway exceptions to HTTPException
+        4. Returns a normalized response
     """
     try:
-        # Delegar al API Gateway para procesamiento completo
+        # Delegate to the API Gateway for complete processing
         result = process_chat_message(request)
         return result
     
-    except ValidationError as ve:
-        # Error de validación: request inválida
+    except GatewayError as ge:
+        # Convert GatewayError to HTTPException
+        # The GatewayError already contains status_code and detail appropriate
         raise HTTPException(
-            status_code=ve.status_code,
-            detail=ve.detail
-        ) from ve
-    
-    except AuthenticationError as ae:
-        # Error de autenticación: credenciales inválidas
-        raise HTTPException(
-            status_code=ae.status_code,
-            detail=ae.detail
-        ) from ae
-    
-    except InternalServerError as ise:
-        # Error interno: fallo en procesamiento
-        raise HTTPException(
-            status_code=ise.status_code,
-            detail=ise.detail
-        ) from ise
+            status_code=ge.status_code,
+            detail=ge.detail
+        ) from ge
     
     except Exception as error:
-        # Capturar errores inesperados que no fueron manejados por el Gateway
+        # Capture unexpected errors that were not handled by the Gateway
         raise HTTPException(
             status_code=500,
-            detail='Error interno inesperado al procesar el mensaje.'
+            detail='Unexpected internal error processing the message...'
         ) from error
