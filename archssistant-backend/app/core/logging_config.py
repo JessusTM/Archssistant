@@ -1,14 +1,14 @@
-"""Configuración centralizada del sistema de logging para Arch-Assistant.
+"""Centralized logging system configuration for Arch-Assistant.
 
-Este módulo proporciona:
-- Configuración de logging consistente en toda la aplicación
-- Handlers para consola y archivo
-- Formatters profesionales con contexto
-- Rotación de archivos de log
-- Niveles de severidad configurables
+This module provides:
+- Consistent logging configuration across the entire application
+- Handlers for console and file output
+- Professional formatters with context
+- Log file rotation
+- Configurable severity levels
 
-Uso:
-    from app.config.logging_config import setup_logging
+Usage:
+    from app.core.logging_config import setup_logging
     setup_logging()
 """
 
@@ -19,36 +19,36 @@ from pathlib import Path
 from typing import Optional
 
 
-# Directorio de logs
+# Logs directory
 LOGS_DIR = Path(__file__).parent.parent.parent / 'logs'
 LOGS_DIR.mkdir(exist_ok=True)
 
-# Rutas de archivos de log
+# Log file paths
 LOG_FILE_DEBUG = LOGS_DIR / 'debug.log'
 LOG_FILE_INFO = LOGS_DIR / 'info.log'
 LOG_FILE_ERROR = LOGS_DIR / 'error.log'
 
-# Formato detallado para debugging
+# Detailed format for debugging
 DEBUG_FORMAT = (
     '%(asctime)s - %(name)s - %(levelname)s - '
     '[%(filename)s:%(lineno)d] - %(funcName)s() - %(message)s'
 )
 
-# Formato compacto para producción
+# Compact format for production
 PRODUCTION_FORMAT = (
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-# Formato para archivo
+# Format for log files
 FILE_FORMAT = (
     '%(asctime)s | %(name)-30s | %(levelname)-8s | %(message)s'
 )
 
 
 class ColoredFormatter(logging.Formatter):
-    """Formatter personalizado que agrega colores a los logs en consola."""
+    """Custom formatter that adds colors to console logs."""
     
-    # Códigos ANSI para colores
+    # ANSI color codes
     COLORS = {
         'DEBUG': '\033[36m',      # Cyan
         'INFO': '\033[32m',       # Green
@@ -59,7 +59,7 @@ class ColoredFormatter(logging.Formatter):
     }
     
     def format(self, record):
-        """Formatea el registro con colores."""
+        """Formats the log record with colors."""
         levelname = record.levelname
         if levelname in self.COLORS:
             record.levelname = (
@@ -72,30 +72,30 @@ def setup_logging(
     debug_mode: bool = False,
     log_level: str = 'INFO'
 ) -> None:
-    """Configura el sistema de logging para toda la aplicación.
+    """Configures the logging system for the entire application.
 
-    Crea handlers para:
-    - Consola: logs formateados con colores
-    - Archivo debug.log: todos los logs (DEBUG y superior)
-    - Archivo info.log: logs INFO y superior (sin DEBUG)
-    - Archivo error.log: solo logs ERROR y CRITICAL
+    Creates handlers for:
+    - Console: logs formatted with colors
+    - debug.log file: all logs (DEBUG and above)
+    - info.log file: INFO and above logs (without DEBUG)
+    - error.log file: only ERROR and CRITICAL logs
 
     Args:
-        debug_mode: Si True, muestra logs DEBUG en consola y archivo.
-        log_level: Nivel mínimo de log ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+        debug_mode: If True, shows DEBUG logs in console and file.
+        log_level: Minimum log level ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
 
     Example:
         setup_logging(debug_mode=True, log_level='DEBUG')
     """
     
-    # Configurar nivel raíz
+    # Configure root level
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)  # Capturar todos los niveles
+    root_logger.setLevel(logging.DEBUG)  # Capture all levels
     
-    # Limpiar handlers existentes
+    # Clear existing handlers
     root_logger.handlers.clear()
     
-    # Handler para consola
+    # Console handler
     console_handler = logging.StreamHandler()
     console_level = logging.DEBUG if debug_mode else logging.INFO
     console_handler.setLevel(console_level)
@@ -106,7 +106,7 @@ def setup_logging(
     console_handler.setFormatter(console_formatter)
     root_logger.addHandler(console_handler)
     
-    # Handler para archivo debug (todos los logs)
+    # Debug file handler (all logs)
     if debug_mode:
         debug_handler = logging.handlers.RotatingFileHandler(
             LOG_FILE_DEBUG,
@@ -119,7 +119,7 @@ def setup_logging(
         debug_handler.setFormatter(debug_formatter)
         root_logger.addHandler(debug_handler)
     
-    # Handler para archivo info (INFO y superior)
+    # Info file handler (INFO and above)
     info_handler = logging.handlers.RotatingFileHandler(
         LOG_FILE_INFO,
         maxBytes=10 * 1024 * 1024,  # 10 MB
@@ -132,7 +132,7 @@ def setup_logging(
     info_handler.setFormatter(info_formatter)
     root_logger.addHandler(info_handler)
     
-    # Handler para archivo error (ERROR y CRITICAL)
+    # Error file handler (ERROR and CRITICAL)
     error_handler = logging.handlers.RotatingFileHandler(
         LOG_FILE_ERROR,
         maxBytes=10 * 1024 * 1024,  # 10 MB
@@ -144,27 +144,27 @@ def setup_logging(
     error_handler.setFormatter(error_formatter)
     root_logger.addHandler(error_handler)
     
-    # Log de inicialización
+    # Initialization log
     logger = logging.getLogger(__name__)
     logger.info("=" * 80)
-    logger.info("Sistema de logging inicializado")
-    logger.info(f"Directorio de logs: {LOGS_DIR.absolute()}")
-    logger.info(f"Nivel de consola: {logging.getLevelName(console_level)}")
+    logger.info("Logging system initialized")
+    logger.info(f"Logs directory: {LOGS_DIR.absolute()}")
+    logger.info(f"Console level: {logging.getLevelName(console_level)}")
     logger.info("=" * 80)
 
 
 def get_logger(name: str) -> logging.Logger:
-    """Obtiene un logger configurado para un módulo.
+    """Gets a configured logger for a module.
 
     Args:
-        name: Nombre del módulo (típicamente __name__)
+        name: Module name (typically __name__)
 
     Returns:
-        logging.Logger: Logger configurado
+        logging.Logger: Configured logger
 
     Example:
-        from app.config.logging_config import get_logger
+        from app.core.logging_config import get_logger
         logger = get_logger(__name__)
-        logger.info("Mensaje informativo")
+        logger.info("Informative message")
     """
     return logging.getLogger(name)

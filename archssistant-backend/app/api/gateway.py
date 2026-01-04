@@ -10,7 +10,7 @@ from datetime import datetime
 from .models import ChatRequest, ChatResponse
 from .exceptions import GatewayError, ApiKeyError
 from ..services.dialogue_orchestrator import DialogueOrchestrator
-from ..config import get_logger
+from ..core import get_logger
 
 
 class ApiGateway:

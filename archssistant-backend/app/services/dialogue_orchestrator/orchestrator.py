@@ -9,7 +9,7 @@ Main responsibilities:
 
 from ..llm_service import LLMService
 from ..recommendation_engine import RecommendationEngine
-from app.config import get_logger
+from app.core import get_logger
 
 
 class DialogueOrchestrator:

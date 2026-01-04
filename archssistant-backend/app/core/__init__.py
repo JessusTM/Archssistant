@@ -1,11 +1,15 @@
-"""Módulo de configuración de Arch-Assistant.
+"""Core module for Arch-Assistant.
 
-Contiene configuraciones globales para:
-- Logging centralizado
-- Variables de entorno
-- Constantes de la aplicación
+Contains global configurations for:
+- Centralized logging
+- Environment variables
+- Application constants
 """
 
+# Import configuration (this initializes logging automatically)
+from .config import config, Config
+
+# Import logging utilities
 from .logging_config import setup_logging, get_logger
 from .logging_utils import (
     log_function_call,
@@ -17,6 +21,8 @@ from .logging_utils import (
 )
 
 __all__ = [
+    'config',
+    'Config',
     'setup_logging',
     'get_logger',
     'log_function_call',

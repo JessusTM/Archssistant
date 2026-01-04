@@ -1,9 +1,9 @@
-"""Utilidades de logging para Arch-Assistant.
+"""Logging utilities for Arch-Assistant.
 
-Proporciona decoradores y funciones auxiliares para logging automático:
-- Decorador @log_function_call para rastrear ejecución de funciones
-- Decorador @log_performance para medir tiempo de ejecución
-- Funciones para loguear eventos específicos del dominio
+Provides decorators and helper functions for automatic logging:
+- @log_function_call decorator to track function execution
+- @log_performance decorator to measure execution time
+- Functions to log domain-specific events
 """
 
 import logging
@@ -15,12 +15,12 @@ from .logging_config import get_logger
 
 
 def log_function_call(func: Callable) -> Callable:
-    """Decorador que registra las llamadas a una función.
+    """Decorator that logs function calls.
 
-    Registra:
-    - Entrada a la función con argumentos
-    - Salida de la función con resultado
-    - Excepciones si ocurren
+    Logs:
+    - Function entry with arguments
+    - Function exit with result
+    - Exceptions if they occur
 
     Example:
         @log_function_call
@@ -32,26 +32,26 @@ def log_function_call(func: Callable) -> Callable:
         logger = get_logger(func.__module__)
         func_name = func.__name__
         
-        logger.debug(f"Entrando en {func_name}() con args={args}, kwargs={kwargs}")
+        logger.debug(f"Entering {func_name}() with args={args}, kwargs={kwargs}")
         
         try:
             result = func(*args, **kwargs)
-            logger.debug(f"Saliendo de {func_name}() con resultado={result}")
+            logger.debug(f"Exiting {func_name}() with result={result}")
             return result
         except Exception as e:
-            logger.error(f"Error en {func_name}(): {str(e)}", exc_info=True)
+            logger.error(f"Error in {func_name}(): {str(e)}", exc_info=True)
             raise
     
     return wrapper
 
 
 def log_performance(func: Callable) -> Callable:
-    """Decorador que mide y registra el tiempo de ejecución de una función.
+    """Decorator that measures and logs function execution time.
 
-    Registra:
-    - Tiempo de inicio
-    - Tiempo de finalización
-    - Duración total en milisegundos
+    Logs:
+    - Start time
+    - End time
+    - Total duration in milliseconds
 
     Example:
         @log_performance
@@ -64,17 +64,17 @@ def log_performance(func: Callable) -> Callable:
         func_name = func.__name__
         
         start_time = time.time()
-        logger.debug(f"[PERF] Iniciando {func_name}...")
+        logger.debug(f"[PERF] Starting {func_name}...")
         
         try:
             result = func(*args, **kwargs)
             duration_ms = (time.time() - start_time) * 1000
-            logger.debug(f"[PERF] {func_name} completó en {duration_ms:.2f}ms")
+            logger.debug(f"[PERF] {func_name} completed in {duration_ms:.2f}ms")
             return result
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             logger.error(
-                f"[PERF] {func_name} falló después de {duration_ms:.2f}ms: {str(e)}",
+                f"[PERF] {func_name} failed after {duration_ms:.2f}ms: {str(e)}",
                 exc_info=True
             )
             raise
@@ -88,13 +88,13 @@ def log_orchestration_event(
     message: str,
     extra_data: dict = None
 ) -> None:
-    """Registra un evento de orquestación conversacional.
+    """Logs a conversational orchestration event.
 
     Args:
-        event_type: Tipo de evento ('dialogue_start', 'question_asked', 'answer_received', etc.)
-        phase: Fase actual ('interviewing', 'recommendation', 'complete')
-        message: Descripción legible del evento
-        extra_data: Datos adicionales a loguear (parámetros, scores, etc.)
+        event_type: Event type ('dialogue_start', 'question_asked', 'answer_received', etc.)
+        phase: Current phase ('interviewing', 'recommendation', 'complete')
+        message: Human-readable event description
+        extra_data: Additional data to log (parameters, scores, etc.)
 
     Example:
         log_orchestration_event(
@@ -115,13 +115,13 @@ def log_llm_call(
     output_summary: str = None,
     model: str = 'deepseek'
 ) -> None:
-    """Registra una llamada al servicio LLM.
+    """Logs an LLM service call.
 
     Args:
-        operation: Tipo de operación ('interpret', 'generate_question', 'describe')
-        input_summary: Resumen del input (para debugging)
-        output_summary: Resumen del output (opcional)
-        model: Modelo LLM utilizado
+        operation: Operation type ('interpret', 'generate_question', 'describe')
+        input_summary: Input summary (for debugging)
+        output_summary: Output summary (optional)
+        model: LLM model used
 
     Example:
         log_llm_call(
@@ -146,12 +146,12 @@ def log_recommendation_event(
     message: str,
     extra_data: dict = None
 ) -> None:
-    """Registra un evento del motor de recomendación.
+    """Logs a recommendation engine event.
 
     Args:
-        stage: Etapa del proceso ('scoring', 'ranking', 'selection')
-        message: Descripción del evento
-        extra_data: Datos adicionales (scores, arquitecturas, etc.)
+        stage: Process stage ('scoring', 'ranking', 'selection')
+        message: Event description
+        extra_data: Additional data (scores, architectures, etc.)
 
     Example:
         log_recommendation_event(
@@ -172,14 +172,14 @@ def log_api_request(
     duration_ms: float,
     message: str = None
 ) -> None:
-    """Registra una solicitud HTTP.
+    """Logs an HTTP request.
 
     Args:
-        method: Método HTTP (GET, POST, etc.)
-        endpoint: Endpoint accedido
-        status_code: Código de respuesta HTTP
-        duration_ms: Duración de la solicitud en ms
-        message: Mensaje adicional
+        method: HTTP method (GET, POST, etc.)
+        endpoint: Accessed endpoint
+        status_code: HTTP response code
+        duration_ms: Request duration in ms
+        message: Additional message
 
     Example:
         log_api_request(
