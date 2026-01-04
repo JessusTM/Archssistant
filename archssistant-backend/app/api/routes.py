@@ -13,7 +13,7 @@ from .gateway import ApiGateway
 from .exceptions import GatewayError
 
 router  = APIRouter(prefix='/api', tags=['chat'])
-gateway = ApiGateway() # Create a single instance of the API Gateway
+gateway = ApiGateway() 
 
 
 @router.post('/chat', response_model=ChatResponse)

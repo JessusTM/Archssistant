@@ -12,8 +12,6 @@ from .config import config, Config
 # Import logging utilities
 from .logging_config import setup_logging, get_logger
 from .logging_utils import (
-    log_function_call,
-    log_performance,
     log_orchestration_event,
     log_llm_call,
     log_recommendation_event,
@@ -25,8 +23,6 @@ __all__ = [
     'Config',
     'setup_logging',
     'get_logger',
-    'log_function_call',
-    'log_performance',
     'log_orchestration_event',
     'log_llm_call',
     'log_recommendation_event',
