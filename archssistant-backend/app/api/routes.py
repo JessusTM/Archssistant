@@ -9,11 +9,11 @@ from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
 
 from .models import ChatRequest, ChatResponse
-from .gateway import process_chat_message
+from .gateway import ApiGateway
 from .exceptions import GatewayError
 
-
-router = APIRouter(prefix='/api', tags=['chat'])
+router  = APIRouter(prefix='/api', tags=['chat'])
+gateway = ApiGateway() # Create a single instance of the API Gateway
 
 
 @router.post('/chat', response_model=ChatResponse)
@@ -46,7 +46,7 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
     """
     try:
         # Delegate to the API Gateway for complete processing
-        result = process_chat_message(request)
+        result = gateway.process_chat_message(request)
         return result
     
     except GatewayError as ge:
