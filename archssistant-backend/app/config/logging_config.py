@@ -8,7 +8,7 @@ Este módulo proporciona:
 - Niveles de severidad configurables
 
 Uso:
-    from python_backend.config.logging_config import setup_logging
+    from app.config.logging_config import setup_logging
     setup_logging()
 """
 
@@ -163,7 +163,7 @@ def get_logger(name: str) -> logging.Logger:
         logging.Logger: Logger configurado
 
     Example:
-        from python_backend.config.logging_config import get_logger
+        from app.config.logging_config import get_logger
         logger = get_logger(__name__)
         logger.info("Mensaje informativo")
     """

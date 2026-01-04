@@ -16,7 +16,7 @@ Estructuras clave:
 
 from ..llm_service import interpret_user_answer, generate_next_question, generate_final_descriptions
 from ..recommendation_engine import get_recommendation
-from python_backend.config import get_logger
+from app.config import get_logger
 
 logger = get_logger(__name__)
 

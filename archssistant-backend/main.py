@@ -8,9 +8,9 @@ La lógica de negocio y los endpoints están organizados en módulos separados
 para mantener el código limpio, mantenible y escalable.
 
 Arquitectura de capas:
-- Routes (python_backend/api/routes.py): Endpoints HTTP
-- Gateway (python_backend/api/gateway.py): Validación, logging, manejo de errores
-- Orchestrator (python_backend/server/dialogue_orchestrator/): Orquestación de flujo
+- Routes (app/api/routes.py): Endpoints HTTP
+- Gateway (app/api/gateway.py): Validación, logging, manejo de errores
+- Orchestrator (app/server/dialogue_orchestrator/): Orquestación de flujo
 - LLM Service & Recommendation Engine: Servicios especializados
 """
 
@@ -21,8 +21,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 # Importar configuración de logging centralizada
-from python_backend.config import setup_logging, get_logger
-from python_backend.api import router
+from app.config import setup_logging, get_logger
+from app.api import router
 
 # Configurar logging global PRIMERO
 setup_logging(debug_mode=False)
@@ -55,7 +55,7 @@ app.include_router(router)
 logger.info("Routers de API registrados")
 
 # Configurar directorio de archivos estáticos
-public_dir = os.path.join(os.path.dirname(__file__), 'public')
+public_dir = os.path.join(os.path.dirname(__file__), '..', 'public')
 
 # Montar archivos estáticos del frontend
 app.mount(

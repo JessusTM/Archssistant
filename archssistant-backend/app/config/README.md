@@ -7,7 +7,7 @@ Arch-Assistant implementa un sistema de logging profesional y centralizado que p
 ## Características
 
 ### ✅ Logging Centralizado
-- **Configuración única** en `python_backend/config/logging_config.py`
+- **Configuración única** en `app/config/logging_config.py`
 - **Inicialización en punto de entrada** (`main.py`)
 - **Coherencia en toda la aplicación**
 
@@ -36,22 +36,24 @@ Arch-Assistant implementa un sistema de logging profesional y centralizado que p
 ## Estructura de Directorios
 
 ```
-python_backend/
-├── config/
-│   ├── __init__.py
-│   ├── logging_config.py      # Configuración central
-│   └── logging_utils.py        # Decoradores y utilidades
-├── api/
-│   ├── gateway.py             # Usa get_logger()
-│   └── routes.py
-├── server/
-│   ├── dialogue_orchestrator/
-│   │   └── orchestrator.py    # Usa log_orchestration_event()
-│   ├── llm_service/
-│   │   └── llm_service.py     # Usa log_llm_call()
-│   └── recommendation_engine/
-│       └── engine.py          # Usa log_recommendation_event()
-└── main.py                    # setup_logging() + get_logger()
+archssistant-backend/
+├── app/
+│   ├── config/
+│   │   ├── __init__.py
+│   │   ├── logging_config.py      # Configuración central
+│   │   └── logging_utils.py        # Decoradores y utilidades
+│   ├── api/
+│   │   ├── gateway.py             # Usa get_logger()
+│   │   └── routes.py
+│   └── server/
+│       ├── dialogue_orchestrator/
+│       │   └── orchestrator.py    # Usa log_orchestration_event()
+│       ├── llm_service/
+│       │   └── llm_service.py     # Usa log_llm_call()
+│       └── recommendation_engine/
+│           └── engine.py          # Usa log_recommendation_event()
+├── main.py                    # setup_logging() + get_logger()
+└── requirements.txt
 
 logs/
 ├── debug.log                  # Todos los logs (DEBUG+)
@@ -63,7 +65,7 @@ logs/
 
 ### Inicialización (main.py)
 ```python
-from python_backend.config import setup_logging, get_logger
+from app.config import setup_logging, get_logger
 
 # Configurar logging (se hace automáticamente en main.py)
 setup_logging(debug_mode=False)  # False en producción
@@ -75,7 +77,7 @@ logger.info("Mensaje informativo")
 
 ### En Módulos
 ```python
-from python_backend.config import get_logger
+from app.config import get_logger
 
 logger = get_logger(__name__)
 
@@ -89,7 +91,7 @@ logger.critical("Error crítico")
 
 ### Decoradores
 ```python
-from python_backend.config import log_function_call, log_performance
+from app.config import log_function_call, log_performance
 
 @log_function_call
 def process_data(x, y):
@@ -103,7 +105,7 @@ def expensive_operation():
 
 ### Eventos de Dominio
 ```python
-from python_backend.config import (
+from app.config import (
     log_orchestration_event,
     log_llm_call,
     log_recommendation_event
@@ -186,9 +188,9 @@ Cada archivo de log:
 ## Ejemplo Completo
 
 ```python
-# En python_backend/server/dialogue_orchestrator/orchestrator.py
+# En app/server/dialogue_orchestrator/orchestrator.py
 
-from python_backend.config import (
+from app.config import (
     get_logger,
     log_function_call,
     log_orchestration_event
