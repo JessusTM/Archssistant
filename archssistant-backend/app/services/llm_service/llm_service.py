@@ -20,6 +20,7 @@ import os
 from pathlib import Path
 
 from app.api.exceptions import ApiKeyError
+from app.core import get_logger
 
 
 class LLMService:
@@ -34,6 +35,7 @@ class LLMService:
     def __init__(self):
         """Initialize the LLM Service."""
         self.prompt_dir = Path(__file__).parent / 'prompt'
+        self.logger = get_logger(__name__)
     
     def load_prompt(self, prompt_filename):
         """Loads a prompt from a text file.
@@ -79,10 +81,12 @@ class LLMService:
         """
         api_key = os.getenv('DEEPSEEK_API_KEY')
         if not api_key:
+            self.logger.error("DEEPSEEK_API_KEY not found in environment variables")
             raise ApiKeyError('La clave de API no está configurada (DEEPSEEK_API_KEY).')
 
         placeholder = api_key.strip().lower()
         if placeholder in {"", "your_deepseek_api_key_here", "sk-replace_me", "tu_clave_api_aqui"} or placeholder.startswith("tu_clave_api_aqui"):
+            self.logger.error("DEEPSEEK_API_KEY appears to be a placeholder value")
             raise ApiKeyError('La clave de API parece ser un placeholder. Configura DEEPSEEK_API_KEY en .env con tu clave real.')
 
         request_body = {
@@ -104,20 +108,27 @@ class LLMService:
 
             if not response.ok:
                 if response.status_code == 401:
+                    self.logger.error("DeepSeek API authentication failed (401)")
                     raise ApiKeyError('Autenticación fallida con DeepSeek. Revisa tu DEEPSEEK_API_KEY.')
+                self.logger.error(f"DeepSeek API request failed with status {response.status_code}")
                 raise Exception('Error en la API al llamar al servicio.')
 
             data = response.json()
             raw_content = data.get('choices', [{}])[0].get('message', {}).get('content')
 
             if not raw_content:
+                self.logger.error("DeepSeek API response missing expected content")
                 raise Exception('La respuesta de la API no contiene el contenido esperado.')
 
             return json.loads(raw_content)
 
         except ApiKeyError:
             raise
+        except json.JSONDecodeError as je:
+            self.logger.error(f"Failed to parse JSON response from DeepSeek API: {str(je)}")
+            raise Exception(f"Error parsing API response: {str(je)}")
         except Exception as error:
+            self.logger.error(f"Error calling DeepSeek API: {str(error)}", exc_info=True)
             raise Exception(f"Error al llamar a la API: {str(error)}")
     
     def interpret_user_answer(self, question_text, user_answer, parameter_to_infer):
@@ -235,10 +246,11 @@ class LLMService:
 
         try:
             result = self.call_api(messages, 0.6)
-            print(f"DEBUG LLM: Descripciones generadas: {result}")
+            self.logger.debug(f"Architecture descriptions generated - keys: {list(result.keys())}")
             return result
         except Exception as e:
-            print(f"ERROR al generar descripciones: {e}")
+            self.logger.error(f"Failed to generate architecture descriptions: {str(e)}", exc_info=True)
+            self.logger.warning("Returning default descriptions to continue recommendation flow")
             # Return default descriptions
             default_descriptions = {}
             for rec in recommendations:

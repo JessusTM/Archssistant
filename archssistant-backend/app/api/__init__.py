@@ -1,7 +1,7 @@
-"""Módulo API para Arch-Assistant.
+"""API module for Arch-Assistant.
 
-Este paquete contiene la definición de rutas HTTP, modelos de request/response
-y la configuración de los endpoints de la aplicación.
+This package contains HTTP route definitions, request/response models,
+and endpoint configuration for the application.
 """
 
 from .routes import router

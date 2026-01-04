@@ -11,9 +11,11 @@ from typing import Dict, Any
 from .models import ChatRequest, ChatResponse
 from .gateway import ApiGateway
 from .exceptions import GatewayError
+from ..core import get_logger
 
 router  = APIRouter(prefix='/api', tags=['chat'])
-gateway = ApiGateway() 
+gateway = ApiGateway()
+logger  = get_logger(__name__) 
 
 
 @router.post('/chat', response_model=ChatResponse)
@@ -59,6 +61,7 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
     
     except Exception as error:
         # Capture unexpected errors that were not handled by the Gateway
+        logger.exception("Unexpected error in chat endpoint that was not handled by Gateway")
         raise HTTPException(
             status_code=500,
             detail='Unexpected internal error processing the message...'

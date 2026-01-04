@@ -27,10 +27,10 @@ logger = get_logger(__name__)
 app = FastAPI(
     title       = config.APP_NAME,
     version     = '1.0.0',
-    description = 'API para el asistente de recomendación de arquitecturas de software'
+    description = 'API for the software architecture recommendation assistant'
 )
 
-logger.info(f"Inicializando API {config.APP_NAME}")
+logger.info(f"Initializing API: {config.APP_NAME}")
 
 # Configure CORS
 app.add_middleware(
@@ -40,10 +40,10 @@ app.add_middleware(
     allow_methods       = ['*'],
     allow_headers       = ['*'],
 )
-logger.info("CORS habilitado para todos los orígenes")
+logger.info("CORS middleware enabled for all origins")
 
 app.include_router(router)
-logger.info("Routers de API registrados")
+logger.info("API routers registered")
 
 public_dir = os.path.join(os.path.dirname(__file__), '..', 'public')
 app.mount(
@@ -51,5 +51,5 @@ app.mount(
     StaticFiles(directory=public_dir, html=True),
     name='static'
 )
-logger.info(f"Archivos estáticos montados desde: {public_dir}")
-logger.info(f"API {config.APP_NAME} lista para recibir solicitudes")
+logger.info(f"Static files mounted from: {public_dir}")
+logger.info(f"API {config.APP_NAME} ready to receive requests")

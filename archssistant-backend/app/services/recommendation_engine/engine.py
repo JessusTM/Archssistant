@@ -5,6 +5,7 @@ and assigns a similarity score.
 """
 
 from .architecture_data import architectures, VALUE_MAP
+from app.core import get_logger
 
 
 class RecommendationEngine:
@@ -18,6 +19,7 @@ class RecommendationEngine:
         """Initialize the Recommendation Engine."""
         self.architectures = architectures
         self.value_map = VALUE_MAP
+        self.logger = get_logger(__name__)
     
     def get_recommendation(self, user_answers):
         """Calculates architecture recommendations from inferred parameters.
@@ -46,6 +48,10 @@ class RecommendationEngine:
             This engine is deterministic and doesn't use the LLM. If `VALUE_MAP` doesn't
             contain some value (e.g. new entries), that parameter doesn't contribute to the score.
         """
+        self.logger.debug(
+            f"Calculating recommendations for {len(user_answers)} parameters"
+        )
+        
         scored_architectures = []
         
         for arch in self.architectures:
@@ -65,4 +71,11 @@ class RecommendationEngine:
             scored_architectures.append({**arch, 'score': score})
         
         scored_architectures.sort(key=lambda x: x['score'], reverse=True)
-        return scored_architectures[:3]
+        top_3 = scored_architectures[:3]
+        
+        self.logger.info(
+            f"Recommendations generated - top architectures: "
+            f"{[arch['name'] for arch in top_3]}"
+        )
+        
+        return top_3

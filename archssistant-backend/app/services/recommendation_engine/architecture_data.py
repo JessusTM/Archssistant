@@ -1,10 +1,10 @@
-"""Datos base del motor de recomendación.
+"""Base data for the recommendation engine.
 
-Contiene:
-- `architectures`: lista de arquitecturas conocidas con sus valores categóricos por parámetro.
-- `VALUE_MAP`: mapeo de valores categóricos a una escala numérica para comparación.
+This module contains:
+- `architectures`: list of known architectures with their categorical values per parameter.
+- `VALUE_MAP`: mapping of categorical values to a numeric scale for comparison.
 
-Estos datos se consumen en `recommendation_engine.engine.get_recommendation`.
+This data is consumed by `recommendation_engine.engine.get_recommendation`.
 """
 
 architectures = [

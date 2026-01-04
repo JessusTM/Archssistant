@@ -1,3 +1,10 @@
+"""Custom exceptions for the API Gateway layer.
+
+This module defines domain-specific exceptions that are used throughout
+the API layer for error handling and HTTP status code mapping.
+"""
+
+
 class GatewayError(Exception):
     """
     Exception that unifies the error handling of the gateway, allowing

@@ -52,20 +52,18 @@ class ApiGateway:
             # 1. Validation of input
             self._validate_chat_request(request)
             self.logger.info(
-                f"[{request_id}] Chat request received. "
-                f"History: {len(request.history)} messages."
+                f"[{request_id}] Chat request received - "
+                f"history contains {len(request.history)} messages"
             )
             
             # 2. Delegation to the Orchestrator
-            self.logger.debug(
-                f"[{request_id}] Delegating to the Dialogue Orchestrator..."
-            )
+            self.logger.debug(f"[{request_id}] Delegating to Dialogue Orchestrator")
             result = self.orchestrator.handle_message(request.history)
             
             # 3. Logging of response
+            state_status = result.get('state', {}).get('status', 'unknown')
             self.logger.info(
-                f"[{request_id}] Response generated successfully. "
-                f"State: {result.get('state', {}).get('status', 'unknown')}"
+                f"[{request_id}] Response generated successfully - state: {state_status}"
             )
             
             return result
@@ -79,7 +77,7 @@ class ApiGateway:
         
         except Exception as e:
             self.logger.exception(
-                f"[{request_id}] Uncontrolled internal error: {str(e)}"
+                f"[{request_id}] Unexpected internal error in gateway: {str(e)}"
             )
             raise GatewayError(
                 status_code = 500,
@@ -123,4 +121,6 @@ class ApiGateway:
                     detail      = f"Message {i} must contain 'role' and 'content'."
                 )
         
-        self.logger.debug(f"Validation of request successful. {len(request.history)} valid messages.")
+        self.logger.debug(
+            f"Request validation successful - {len(request.history)} valid messages"
+        )

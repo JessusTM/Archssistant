@@ -206,8 +206,10 @@ class DialogueOrchestrator:
                 state['status'] = 'finished'
                 return {'response': response, 'state': state}
             
-            self.logger.debug(f"Generating descriptions for {len(recommendations)} architectures")
-            self.logger.debug(f"Architectures: {[r['name'] for r in recommendations]}")
+            self.logger.debug(
+                f"Generating descriptions for {len(recommendations)} architectures: "
+                f"{[r['name'] for r in recommendations]}"
+            )
             
             # Generate descriptions for each recommended architecture
             descriptions = self.llm_service.generate_final_descriptions(
