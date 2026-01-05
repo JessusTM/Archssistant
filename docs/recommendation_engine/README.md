@@ -10,15 +10,15 @@ Su trabajo es:
 - Devolver las 3 mejores.
 
 Código:
-- `python_backend/server/recommendation_engine/architecture_data.py` (datos + VALUE_MAP)
-- `python_backend/server/recommendation_engine/engine.py` (algoritmo de scoring)
+- `archssistant-backend/app/services/recommendation_engine/architecture_data.py` (datos + VALUE_MAP)
+- `archssistant-backend/app/services/recommendation_engine/engine.py` (algoritmo de scoring)
 
 ---
 
 ## 2) Entradas y salidas
 
 ### Entrada
-La función principal es `get_recommendation(user_answers)`.
+El método principal es `get_recommendation(user_answers)` de la clase `RecommendationEngine`.
 
 - `user_answers` es un dict de la forma:
 ```python
@@ -51,7 +51,7 @@ Una lista con 3 arquitecturas (dict) con un campo adicional `score`:
 ### 3.1 Código (con números de línea)
 
 ```python
- 1  # server/recommendation_engine/architecture_data.py
+  # app/services/recommendation_engine/architecture_data.py
  2  
  3  architectures = [
  4      {
@@ -171,16 +171,26 @@ Así el algoritmo puede hacer restas como `abs(user_score - arch_score)`.
 ### 4.1 Código (con números de línea)
 
 ```python
- 1  # server/recommendation_engine/engine.py
- 2  
- 3  from .architecture_data import architectures, VALUE_MAP
- 4  
- 5  def get_recommendation(user_answers):
- 6      """
- 7      Calcula la recomendación de arquitectura basada en los parámetros inferidos del usuario.
- 8      Retorna las 3 mejores arquitecturas ordenadas por puntuación.
- 9      """
-10      scored_architectures = []
+  # app/services/recommendation_engine/engine.py
+
+  from .architecture_data import architectures, VALUE_MAP
+  from app.core import get_logger
+
+
+  class RecommendationEngine:
+      """Engine for calculating architecture recommendations based on scoring."""
+      
+      def __init__(self):
+          """Initialize the Recommendation Engine."""
+          self.architectures = architectures
+          self.value_map = VALUE_MAP
+          self.logger = get_logger(__name__)
+      
+      def get_recommendation(self, user_answers):
+          """Calculates architecture recommendations from inferred parameters."""
+          self.logger.debug(f"Calculating recommendations for {len(user_answers)} parameters")
+          
+          scored_architectures = []
 11      
 12      for arch in architectures:
 13          score = 0
@@ -204,44 +214,50 @@ Así el algoritmo puede hacer restas como `abs(user_score - arch_score)`.
 
 ### 4.2 Explicación línea por línea
 
-#### Línea 3: import
-- Importa el catálogo (`architectures`) y el mapa (`VALUE_MAP`) desde el otro archivo.
+#### Estructura de la Clase
 
-#### Líneas 5-10: función y estructura de salida
-- **L5**: define la función.
-- **L10**: crea una lista vacía donde se guardarán arquitecturas con su `score`.
+**Clase `RecommendationEngine`:**
+- `__init__()`: Inicializa el motor con `architectures`, `value_map` y `logger`
+- `get_recommendation()`: Método principal que calcula las recomendaciones
 
-#### Líneas 12-27: cálculo de puntajes
-- **L12**: recorre cada arquitectura del catálogo.
-- **L13**: inicializa `score` para esa arquitectura.
+#### Inicialización y estructura de salida
+- `__init__()`: Inicializa dependencias (architectures, value_map, logger).
+- `get_recommendation()`: Método principal que calcula recomendaciones.
+- Crea una lista vacía donde se guardarán arquitecturas con su `score`.
 
-- **L14**: recorre cada par `(parameter, user_answer)` del usuario.
+#### Cálculo de puntajes
+- Registra debug con `self.logger.debug()` al inicio.
+- Recorre cada arquitectura del catálogo.
+- Inicializa `score` para esa arquitectura.
+
+- Recorre cada par `(parameter, user_answer)` del usuario.
   - `parameter` es la clave (ej. `"scalability"`).
   - `user_answer` es el valor (ej. `"Alta"`).
 
-- **L15**: `arch.get(parameter)` obtiene el valor de ese parámetro en la arquitectura.
+- `arch.get(parameter)` obtiene el valor de ese parámetro en la arquitectura.
   - Si la arquitectura no tiene ese parámetro, devuelve `None`.
 
-- **L16**: convierte la respuesta del usuario a número usando `VALUE_MAP`.
-- **L17**: convierte el valor de la arquitectura a número usando `VALUE_MAP`.
+- Convierte la respuesta del usuario a número usando `self.value_map`.
+- Convierte el valor de la arquitectura a número usando `self.value_map`.
 
-- **L19**: valida que ambos scores existan.
+- Valida que ambos scores existan.
   - Importante: en este proyecto `VALUE_MAP` usa 1-5, así que no hay 0.
-  - Aun así, esta condición depende de “truthiness”: si algún día `VALUE_MAP` tuviera 0, esto fallaría.
 
-- **L20**: calcula la diferencia absoluta.
+- Calcula la diferencia absoluta.
 
-- **L21-L24**: reglas de scoring:
+- Reglas de scoring:
   - diferencia 0 → +2 puntos (match exacto)
   - diferencia 1 → +1 punto (cercano)
   - diferencia >= 2 → +0 puntos
 
-- **L26**: agrega la arquitectura a la lista con el campo extra `score`.
+- Agrega la arquitectura a la lista con el campo extra `score`.
   - `{**arch, 'score': score}` copia todas las claves de `arch` y agrega `score`.
 
-#### Líneas 28-29: ordenar y devolver
-- **L28**: ordena por score de mayor a menor.
-- **L29**: devuelve las primeras 3.
+#### Ordenar y devolver
+- Ordena por score de mayor a menor.
+- Selecciona las primeras 3 arquitecturas.
+- Registra info con `self.logger.info()` con los nombres de las arquitecturas recomendadas.
+- Devuelve las TOP 3.
 
 ---
 
@@ -259,10 +275,42 @@ Si fuera:
 
 ---
 
-## 6) Dónde se usa este servicio
+## 6) Uso
+
+```python
+from app.services.recommendation_engine import RecommendationEngine
+
+# Crear instancia
+engine = RecommendationEngine()
+
+# Calcular recomendaciones
+recommendations = engine.get_recommendation({
+    'complexity': 'Alta',
+    'scalability': 'Moderada',
+    'teamSize': 'Pequeño',
+    ...
+})
+# Retorna: Lista de hasta 3 arquitecturas con campo 'score'
+```
+
+## 7) Logging
+
+El motor de recomendación usa logging estructurado:
+
+```python
+# Debug: Inicio del cálculo
+self.logger.debug(f"Calculating recommendations for {len(user_answers)} parameters")
+
+# Info: Recomendaciones generadas
+self.logger.info(f"Recommendations generated - top architectures: {[arch['name'] for arch in top_3]}")
+```
+
+Todos los mensajes de logging están en inglés para consistencia.
+
+## 8) Dónde se usa este servicio
 
 El orquestador lo llama en fase de recomendación:
-- `recommendations = get_recommendation(state['inferredParams'])`
+- `recommendations = self.recommendation_engine.get_recommendation(state['inferredParams'])`
 
 ---
 

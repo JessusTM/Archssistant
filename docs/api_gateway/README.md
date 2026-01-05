@@ -4,7 +4,7 @@
 
 El **API Gateway** es un componente arquitectónico centralizado que actúa como punto de entrada para todas las solicitudes HTTP a la aplicación. Implementa el patrón API Gateway, proporcionando validación, logging, manejo de errores y delegación a servicios especializados.
 
-**Ubicación:** `python_backend/api/gateway.py`
+**Ubicación:** `archssistant-backend/app/api/gateway.py`
 
 ---
 
@@ -57,11 +57,20 @@ Solicitud HTTP
 
 ---
 
-## Clases y Funciones
+## Clases y Métodos
+
+### `ApiGateway`
+
+Clase que implementa el patrón API Gateway para manejo centralizado de solicitudes.
+
+**Inicialización:**
+```python
+gateway = ApiGateway()
+```
 
 ### `process_chat_message(request: ChatRequest) -> ChatResponse`
 
-Función principal que procesa un mensaje de chat a través del Gateway.
+Método principal que procesa un mensaje de chat a través del Gateway.
 
 **Parámetros:**
 - `request` (ChatRequest): Objeto validado por Pydantic con historial
@@ -70,9 +79,10 @@ Función principal que procesa un mensaje de chat a través del Gateway.
 - `ChatResponse`: Respuesta con mensaje del asistente y estado
 
 **Excepciones lanzadas:**
-- `ValidationError`: Si la solicitud no cumple requisitos
-- `AuthenticationError`: Si hay error de credenciales LLM
-- `InternalServerError`: Si ocurre error no controlado
+- `GatewayError`: Excepción unificada con status_code y detail
+  - status_code 400: Error de validación
+  - status_code 401: Error de autenticación (API key LLM)
+  - status_code 500: Error interno no controlado
 
 **Flujo:**
 1. Valida entrada con `_validate_chat_request()`
@@ -84,7 +94,8 @@ Función principal que procesa un mensaje de chat a través del Gateway.
 
 **Ejemplo:**
 ```python
-result = await process_chat_message(request)
+gateway = ApiGateway()
+result = gateway.process_chat_message(request)
 return result  # ChatResponse
 ```
 
@@ -109,10 +120,10 @@ Valida que la solicitud cumpla los requisitos mínimos.
 **Ejemplo:**
 ```python
 try:
-    _validate_chat_request(request)
-except ValidationError as ve:
-    # Manejo del error
-    raise HTTPException(status_code=400, detail=ve.detail)
+    self._validate_chat_request(request)
+except GatewayError as ge:
+    # Manejo del error (ya tiene status_code y detail)
+    raise ge
 ```
 
 ---
@@ -121,37 +132,49 @@ except ValidationError as ve:
 
 ### `GatewayError`
 
-Base para todas las excepciones del Gateway.
+Excepción unificada para todos los errores del Gateway. Permite especificar el código HTTP y el mensaje de error de forma clara y consistente.
+
+**Ubicación:** `app/api/exceptions.py`
 
 ```python
 class GatewayError(Exception):
     def __init__(self, status_code: int, detail: str):
         self.status_code = status_code
         self.detail = detail
+        super().__init__(detail)
 ```
 
-### `ValidationError` (HTTP 400)
-
-Se lanza cuando la solicitud no cumple validación.
-
+**Uso:**
 ```python
-raise ValidationError("El historial no puede estar vacío")
+# Error de validación (400)
+raise GatewayError(
+    status_code=400,
+    detail="El historial no puede estar vacío"
+)
+
+# Error de autenticación (401)
+raise GatewayError(
+    status_code=401,
+    detail="Error de autenticación con el proveedor LLM: ..."
+)
+
+# Error interno (500)
+raise GatewayError(
+    status_code=500,
+    detail="Error interno al procesar el mensaje de chat."
+)
 ```
 
-### `AuthenticationError` (HTTP 401)
+### `ApiKeyError`
 
-Se lanza cuando hay error de credenciales LLM.
+Excepción específica para errores relacionados con la API key del LLM. El Gateway la captura y la convierte a `GatewayError` con status_code 401.
 
-```python
-raise AuthenticationError("API key inválida o expirada")
-```
-
-### `InternalServerError` (HTTP 500)
-
-Se lanza cuando ocurre error interno no controlado.
+**Ubicación:** `app/api/exceptions.py`
 
 ```python
-raise InternalServerError("Error inesperado al procesar")
+class ApiKeyError(Exception):
+    """Error de autenticación relacionado con la API key del LLM."""
+    pass
 ```
 
 ---
@@ -179,24 +202,20 @@ Esto permite:
 
 **INFO (solicitud exitosa):**
 ```
-[REQUEST_ID] Solicitud de chat recibida. Historial: 3 mensajes.
-[REQUEST_ID] Respuesta generada exitosamente. Estado: interviewing
+[REQUEST_ID] Chat request received - history contains 3 messages
+[REQUEST_ID] Response generated successfully - state: interviewing
 ```
 
-**DEBUG (delegación):**
+**DEBUG (delegación y validación):**
 ```
-[REQUEST_ID] Delegando a Dialogue Orchestrator...
-```
-
-**WARNING (validación):**
-```
-[REQUEST_ID] Error de validación: El historial no puede estar vacío
+[REQUEST_ID] Delegating to Dialogue Orchestrator
+Request validation successful - 3 valid messages
 ```
 
 **ERROR (excepciones):**
 ```
-[REQUEST_ID] Error de autenticación LLM: DEEPSEEK_API_KEY no configurada
-[REQUEST_ID] Error interno no controlado: AttributeError en orchestrator
+[REQUEST_ID] LLM authentication error: DEEPSEEK_API_KEY not found in environment variables
+[REQUEST_ID] Unexpected internal error in gateway: AttributeError in orchestrator
 ```
 
 Todos los logs van a:
@@ -208,23 +227,35 @@ Todos los logs van a:
 
 ## Integración con Routes
 
-El Gateway se integra en `routes.py`:
+El Gateway se integra en `app/api/routes.py`:
 
 ```python
+from .gateway import ApiGateway
+from .exceptions import GatewayError
+
+gateway = ApiGateway()
+
 @router.post('/chat', response_model=ChatResponse)
-async def chat(request: ChatRequest) -> Dict[str, Any]:
+def chat(request: ChatRequest) -> Dict[str, Any]:
     try:
-        result = await process_chat_message(request)
+        result = gateway.process_chat_message(request)
         return result
-    except ValidationError as ve:
-        raise HTTPException(status_code=400, detail=ve.detail)
-    except AuthenticationError as ae:
-        raise HTTPException(status_code=401, detail=ae.detail)
-    except InternalServerError as ise:
-        raise HTTPException(status_code=500, detail=ise.detail)
+    except GatewayError as ge:
+        # GatewayError ya contiene status_code y detail
+        raise HTTPException(
+            status_code=ge.status_code,
+            detail=ge.detail
+        ) from ge
+    except Exception as error:
+        # Errores inesperados no manejados por Gateway
+        logger.exception("Unexpected error in chat endpoint...")
+        raise HTTPException(
+            status_code=500,
+            detail='Unexpected internal error processing the message...'
+        ) from error
 ```
 
-El endpoint actúa como adaptador entre FastAPI y el Gateway.
+El endpoint actúa como adaptador entre FastAPI y el Gateway. La simplificación a una única excepción `GatewayError` hace el manejo de errores más claro y mantenible.
 
 ---
 
@@ -243,9 +274,9 @@ Gateway → Registra éxito → Retorna 200
 
 ```
 Cliente → POST /api/chat con historial vacío
-Gateway → Valida ❌ → Lanza ValidationError
-Routes → Captura → Retorna 400 Bad Request
-Logs → "Error de validación: El historial no puede estar vacío"
+Gateway → Valida ❌ → Lanza GatewayError(status_code=400, ...)
+Routes → Captura GatewayError → Retorna 400 Bad Request
+Logs → "Request validation failed"
 ```
 
 ### Caso 3: Error de Autenticación
@@ -254,9 +285,9 @@ Logs → "Error de validación: El historial no puede estar vacío"
 Cliente → POST /api/chat
 Gateway → Valida ✅ → Delega al Orchestrator
 LLM Service → Llama a DeepSeek → API KEY inválida ❌
-Orchestrator → Lanza ApiKeyError
-Gateway → Captura → Lanza AuthenticationError
-Routes → Captura → Retorna 401 Unauthorized
+LLM Service → Lanza ApiKeyError
+Gateway → Captura ApiKeyError → Lanza GatewayError(status_code=401, ...)
+Routes → Captura GatewayError → Retorna 401 Unauthorized
 ```
 
 ### Caso 4: Error Interno
@@ -265,9 +296,9 @@ Routes → Captura → Retorna 401 Unauthorized
 Cliente → POST /api/chat
 Gateway → Valida ✅ → Delega al Orchestrator
 Orchestrator → Error inesperado ❌
-Gateway → Captura en try/except → Lanza InternalServerError
-Routes → Captura → Retorna 500 Internal Server Error
-Logs → Exception completo con stack trace
+Gateway → Captura Exception → Lanza GatewayError(status_code=500, ...)
+Routes → Captura GatewayError → Retorna 500 Internal Server Error
+Logs → Exception completo con stack trace (logger.exception)
 ```
 
 ---
@@ -278,29 +309,44 @@ Logs → Exception completo con stack trace
 
 ```python
 # Usar request ID para trazabilidad
-logger.info(f"[{request_id}] Solicitud procesada")
+self.logger.info(f"[{request_id}] Chat request received - history contains {len(request.history)} messages")
 
 # Incluir contexto en validaciones
-raise ValidationError("El campo 'history' debe ser un array de mensajes")
+raise GatewayError(
+    status_code=400,
+    detail="The 'history' field must be an array of messages."
+)
 
 # Registrar tanto entrada como salida
-logger.info(f"[{request_id}] Solicitud recibida. Mensajes: {len(request.history)}")
-logger.info(f"[{request_id}] Respuesta generada. Estado: {result['state']['status']}")
+state_status = result.get('state', {}).get('status', 'unknown')
+self.logger.info(f"[{request_id}] Response generated successfully - state: {state_status}")
+
+# Logging de errores con stack trace
+self.logger.exception(f"[{request_id}] Unexpected internal error in gateway: {str(e)}")
 ```
 
 ### ❌ DON'T
 
 ```python
-# No crear nuevos loggers
+# No crear nuevos loggers manualmente
+import logging
 logger = logging.getLogger(__name__)  # Usar get_logger() en su lugar
 
-# No omitir contexto
-logger.error("Error")  # Poco informativo
+# Usar get_logger() del core
+from app.core import get_logger
+self.logger = get_logger(__name__)
 
-# No capturar todas las excepciones
+# No omitir contexto
+self.logger.error("Error")  # Poco informativo
+# Mejor:
+self.logger.error(f"[{request_id}] LLM authentication error: {str(ake)}")
+
+# Capturar excepciones específicas cuando sea posible
 try:
     ...
-except:  # Evitar, ser específico
+except ApiKeyError as ake:  # Específico
+    ...
+except Exception as e:  # Genérico solo para casos no esperados
     ...
 ```
 
@@ -311,32 +357,38 @@ except:  # Evitar, ser específico
 ### Test de Validación
 
 ```python
-async def test_empty_history():
+def test_empty_history():
+    gateway = ApiGateway()
     request = ChatRequest(history=[])
-    with pytest.raises(ValidationError):
-        await process_chat_message(request)
+    with pytest.raises(GatewayError) as exc_info:
+        gateway.process_chat_message(request)
+    assert exc_info.value.status_code == 400
 ```
 
 ### Test de Autenticación
 
 ```python
-async def test_invalid_api_key():
+def test_invalid_api_key():
     os.environ.pop('DEEPSEEK_API_KEY', None)
+    gateway = ApiGateway()
     request = ChatRequest(history=[{"role": "user", "content": "test"}])
-    with pytest.raises(AuthenticationError):
-        await process_chat_message(request)
+    with pytest.raises(GatewayError) as exc_info:
+        gateway.process_chat_message(request)
+    assert exc_info.value.status_code == 401
 ```
 
 ### Test de Éxito
 
 ```python
-async def test_valid_request(mock_orchestrator):
-    mock_orchestrator.return_value = {
+def test_valid_request(mock_orchestrator):
+    mock_orchestrator.handle_message.return_value = {
         "response": {"role": "assistant", "content": "..."},
         "state": {"status": "interviewing"}
     }
+    gateway = ApiGateway()
+    gateway.orchestrator = mock_orchestrator
     request = ChatRequest(history=[{"role": "user", "content": "test"}])
-    result = await process_chat_message(request)
+    result = gateway.process_chat_message(request)
     assert result['response']['role'] == 'assistant'
 ```
 
@@ -412,11 +464,11 @@ Select-String "\[2025-12-28T10:30:45" logs/info.log
 ## Referencias
 
 - [Patrón API Gateway](https://microservices.io/patterns/apigateway.html)
-- [Sistema de Logging](../config/README.md)
-- [Routes (Endpoints)](./routes.py)
+- [Sistema de Logging](./LOGGING.md)
+- [Routes (Endpoints)](../archssistant-backend/app/api/routes.py)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 
 ---
 
-**Versión:** 1.0.0
-**Última actualización:** 28 de Diciembre, 2025
+**Versión:** 2.0.0
+**Última actualización:** Diciembre 2025

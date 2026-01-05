@@ -8,7 +8,7 @@ En este proyecto se usa para 3 tareas concretas:
 2) Decidir la siguiente pregunta (función `generate_next_question`).
 3) Generar descripciones y justificaciones finales (función `generate_final_descriptions`).
 
-Código: `python_backend/server/llm_service/llm_service.py`
+Código: `archssistant-backend/app/services/llm_service/llm_service.py`
 
 ---
 
@@ -37,19 +37,32 @@ Es un número que controla aleatoriedad:
 ## 3) Código completo (con números de línea)
 
 ```python
-  1  # server/llm_service/llm_service.py
-  2  
-  3  import requests
-  4  import json
-  5  import os
-  6  
-  7  
-  8  class ApiKeyError(Exception):
-  9    pass
- 10  
- 11  API_URL = 'https://api.deepseek.com/v1/chat/completions'
- 12  
- 13  async def call_api(messages, temperature=0.2):
+  # app/services/llm_service/llm_service.py
+
+  import requests
+  import json
+  import os
+  from pathlib import Path
+
+  from app.api.exceptions import ApiKeyError
+  from app.core import get_logger
+
+
+  class LLMService:
+      """Service for interacting with the DeepSeek LLM API."""
+      
+      API_URL = 'https://api.deepseek.com/v1/chat/completions'
+      
+      def __init__(self):
+          """Initialize the LLM Service."""
+          self.prompt_dir = Path(__file__).parent / 'prompt'
+          self.logger = get_logger(__name__)
+      
+      def load_prompt(self, prompt_filename):
+          """Loads a prompt from a text file."""
+          # ...
+      
+      def call_api(self, messages, temperature=0.2):
  14      """
  15      Realiza una llamada a la API de DeepSeek.
  16      """
@@ -98,7 +111,7 @@ Es un número que controla aleatoriedad:
  59          raise Exception(f"Error al llamar a la API: {str(error)}")
  60  
  61  
- 62  async def interpret_user_answer(question_text, user_answer, parameter_to_infer):
+ 62      def interpret_user_answer(self, question_text, user_answer, parameter_to_infer):
  63      """
  64      Clasifica la respuesta del usuario en una categoría permitida.
  65      Retorna UNCERTAIN si el usuario no sabe o es ambiguo.
@@ -140,7 +153,7 @@ Es un número que controla aleatoriedad:
 101      return await call_api(messages, 0.0)
 102  
 103  
-104  async def generate_next_question(history, remaining_params, last_interpretation, is_clarification_needed=False):
+104      def generate_next_question(self, history, remaining_params, last_interpretation, is_clarification_needed=False):
 105      """
 106      Genera la siguiente pregunta estratégica en la conversación.
 107      """
@@ -192,7 +205,7 @@ Es un número que controla aleatoriedad:
 153      return await call_api(messages, 0.6)
 154  
 155  
-156  async def generate_final_descriptions(project_description, recommendations, history):
+156      def generate_final_descriptions(self, project_description, recommendations, history):
 157      """
 158      Genera descripciones y justificaciones para cada arquitectura recomendada.
 159      """
@@ -253,28 +266,97 @@ Es un número que controla aleatoriedad:
 
 ---
 
-## 4) Explicación línea por línea
+## 4) Uso
 
-### 4.1 Líneas 3-5: importaciones
-- **L3 `requests`**: librería HTTP para hacer llamadas a la API.
-- **L4 `json`**: convertir texto JSON ↔ estructuras Python.
-- **L5 `os`**: leer variables de entorno (`DEEPSEEK_API_KEY`).
+```python
+from app.services.llm_service import LLMService
 
-### 4.2 Líneas 8-9: ApiKeyError
-- Se define una excepción propia.
-- **Idea**: distinguir “errores por clave API” de otros errores.
+# Crear instancia
+llm_service = LLMService()
 
-### 4.3 Línea 11: API_URL
-- URL del endpoint de chat completions.
+# Interpretar respuesta
+result = llm_service.interpret_user_answer(
+    question_text="¿Cuál es el tamaño de tu equipo?",
+    user_answer="Somos un equipo pequeño de 3 personas",
+    parameter_to_infer="teamSize"
+)
+# Retorna: {"classification": "Pequeño", "confidence": "high", "reasoning": "..."}
 
-### 4.4 Líneas 13-59: `call_api(messages, temperature)`
+# Generar siguiente pregunta
+question = llm_service.generate_next_question(
+    history=[...],
+    remaining_params=['complexity', 'scalability'],
+    last_interpretation=result,
+    is_clarification_needed=False
+)
+# Retorna: {"parameter_to_infer": "complexity", "question_for_user": "...", "full_response_text": "..."}
+
+# Generar descripciones finales
+descriptions = llm_service.generate_final_descriptions(
+    project_description="Sistema para vender cursos online",
+    recommendations=[...],
+    history=[...]
+)
+# Retorna: {"Arquitectura Monolítica": {"description": "...", "justification": "..."}, ...}
+```
+
+## 5) Logging
+
+El servicio LLM usa logging estructurado:
+
+```python
+# Error: API key no encontrada
+self.logger.error("DEEPSEEK_API_KEY not found in environment variables")
+
+# Error: Autenticación fallida
+self.logger.error("DeepSeek API authentication failed (401)")
+
+# Error: Request fallido
+self.logger.error(f"DeepSeek API request failed with status {response.status_code}")
+
+# Error: Parsing JSON
+self.logger.error(f"Failed to parse JSON response from DeepSeek API: {str(je)}")
+
+# Error: Error general con stack trace
+self.logger.error(f"Error calling DeepSeek API: {str(error)}", exc_info=True)
+
+# Debug: Descripciones generadas
+self.logger.debug(f"Architecture descriptions generated - keys: {list(result.keys())}")
+
+# Warning: Usando descripciones por defecto
+self.logger.warning("Returning default descriptions to continue recommendation flow")
+```
+
+Todos los mensajes de logging están en inglés para consistencia.
+
+## 6) Explicación detallada
+
+### Estructura de la Clase
+
+**Clase `LLMService`:**
+- `__init__()`: Inicializa el servicio con `prompt_dir` y `logger`
+- `load_prompt()`: Carga prompts desde archivos de texto
+- `call_api()`: Método principal para llamar a la API de DeepSeek
+- `interpret_user_answer()`: Clasifica respuestas del usuario
+- `generate_next_question()`: Genera la siguiente pregunta
+- `generate_final_descriptions()`: Genera descripciones de arquitecturas
+
+**Importaciones:**
+- `requests`: librería HTTP para hacer llamadas a la API
+- `json`: convertir texto JSON ↔ estructuras Python
+- `os`: leer variables de entorno (`DEEPSEEK_API_KEY`)
+- `pathlib.Path`: manejo de rutas de archivos
+- `ApiKeyError`: excepción definida en `app/api/exceptions.py`
+- `get_logger`: función de logging de `app.core`
+
+### `call_api(messages, temperature)`
 Esta función hace el “trabajo pesado”: validación de clave, request HTTP, parsing JSON.
 
 #### Validación de API key
-- **L17**: lee `DEEPSEEK_API_KEY` del sistema.
-- **L18-L19**: si no existe, lanza `ApiKeyError`.
-- **L21**: normaliza la key con `strip()` (quita espacios) y `lower()` (minúsculas) para detectar placeholders.
-- **L22-L23**: si es un placeholder típico, lanza `ApiKeyError`.
+- Lee `DEEPSEEK_API_KEY` del sistema.
+- Si no existe, registra error con `self.logger.error()` y lanza `ApiKeyError`.
+- Normaliza la key con `strip()` y `lower()` para detectar placeholders.
+- Si es un placeholder típico, registra error y lanza `ApiKeyError`.
 
 #### Preparación del request
 - **L25-L30**: arma el `request_body` con:
@@ -290,49 +372,47 @@ Esta función hace el “trabajo pesado”: validación de clave, request HTTP, 
   - `Authorization: Bearer <api_key>` autentica.
 
 #### Manejo de errores HTTP
-- **L42**: si la respuesta no fue 2xx.
-- **L43**: lee `response.text` (contenido textual del error). En el código actual se guarda en `error_body` pero no se usa.
-- **L44-L45**: si es 401, se interpreta como “clave inválida”.
-- **L46**: para otros casos, lanza una excepción genérica.
+- Si la respuesta no fue 2xx:
+  - Si es 401: registra error con `self.logger.error()` y lanza `ApiKeyError`.
+  - Para otros casos: registra error con `self.logger.error()` y lanza excepción genérica.
 
 #### Parsing de la respuesta
-- **L48**: `response.json()` convierte la respuesta a dict.
-- **L49**: navega por `choices[0].message.content`.
+- `response.json()` convierte la respuesta a dict.
+- Navega por `choices[0].message.content`.
   - Si faltan claves, usa valores por defecto (`[{}]` y `{}`) para evitar `KeyError`.
-- **L51-L52**: si no hay `content`, error.
-- **L54**: `json.loads(raw_content)` convierte el contenido (string JSON) a dict Python.
+- Si no hay `content`, registra error con `self.logger.error()` y lanza excepción.
+- `json.loads(raw_content)` convierte el contenido (string JSON) a dict Python.
 
-#### Excepts
-- **L56-L57**: si es `ApiKeyError`, se vuelve a lanzar igual.
-- **L58-L59**: cualquier otro error se re-lanza con mensaje más claro.
+#### Manejo de excepciones
+- Si es `ApiKeyError`: se vuelve a lanzar igual (ya está logueado).
+- Si es `json.JSONDecodeError`: registra error específico y lanza excepción.
+- Cualquier otro error: registra error con stack trace (`exc_info=True`) y re-lanza.
 
-> Nota técnica importante: `call_api` es `async`, pero usa `requests.post`, que es bloqueante (no-async). Funciona, pero no es ideal para alta concurrencia.
+> **Nota técnica importante**: `call_api` es síncrono y usa `requests.post` (bloqueante). Funciona correctamente, pero en el futuro podría migrarse a un cliente HTTP async para mejorar la concurrencia.
 
-### 4.5 Líneas 62-101: `interpret_user_answer(...)`
+### `interpret_user_answer(question_text, user_answer, parameter_to_infer)`
 - Objetivo: **clasificar** la respuesta del usuario para un parámetro.
 
 Paso a paso:
-- **L67-L98**: construye `system_prompt` (texto grande con reglas).
-  - Incluye `question_text`, `user_answer`, `parameter_to_infer`.
-  - Define allowed classifications y formato de salida JSON.
-- **L100**: crea `messages` con un solo mensaje `system`.
-- **L101**: llama `call_api(messages, 0.0)` (temperatura 0: más determinista).
+- Carga el prompt desde `prompt/interpret_user_answer_prompt.txt`.
+- Formatea el prompt con `question_text`, `user_answer`, `parameter_to_infer`.
+- Crea `messages` con un solo mensaje `system`.
+- Llama `self.call_api(messages, 0.0)` (temperatura 0: más determinista).
 
 Salida esperada:
 ```json
 {"classification": "Alta", "confidence": "high", "reasoning": "..."}
 ```
 
-### 4.6 Líneas 104-153: `generate_next_question(...)`
+### `generate_next_question(history, remaining_params, last_interpretation, is_clarification_needed)`
 - Objetivo: decidir la **siguiente pregunta**.
 
 Paso a paso:
-- **L108-L111**: crea `simplified_history` con los últimos 6 mensajes.
+- Crea `simplified_history` con los últimos 6 mensajes.
   - Esto reduce tokens y evita enviar estructuras innecesarias.
-- **L113-L150**: prompt “Arch-Strategist” con dos modos:
-  - `isClarificationNeeded = true`: re-preguntar más simple el mismo parámetro.
-  - `false`: confirmar lo entendido y preguntar un nuevo parámetro.
-- **L152-L153**: llama `call_api(messages, 0.6)`.
+- Carga el prompt desde `prompt/generate_next_question_prompt.txt`.
+- Formatea el prompt con historial, parámetros restantes, última interpretación, y flag de clarificación.
+- Llama `self.call_api(messages, 0.6)`.
 
 Salida esperada:
 ```json
@@ -343,25 +423,44 @@ Salida esperada:
 }
 ```
 
-### 4.7 Líneas 156-212: `generate_final_descriptions(...)`
+### `generate_final_descriptions(project_description, recommendations, history)`
 - Objetivo: para cada arquitectura recomendada generar:
   - `description`
   - `justification`
 
 Paso a paso:
-- **L160**: construye string con nombres de arquitecturas.
-- **L162-L195**: prompt “Arch-Describer” y formato de salida: JSON donde las claves SON los nombres exactos.
-- **L199-L202**: intenta llamar al LLM y devolver resultado.
-- **L203-L212**: si falla el LLM, crea `default_descriptions` para no romper el flujo del backend.
+- Construye string con nombres de arquitecturas.
+- Carga el prompt desde `prompt/generate_final_descriptions_prompt.txt`.
+- Formatea el prompt con descripción del proyecto y nombres de arquitecturas.
+- Intenta llamar al LLM y devolver resultado.
+  - Registra debug con `self.logger.debug()` cuando tiene éxito.
+- Si falla el LLM:
+  - Registra error con `self.logger.error()` y stack trace.
+  - Registra warning con `self.logger.warning()` sobre usar descripciones por defecto.
+  - Crea `default_descriptions` para no romper el flujo del backend.
 
 ---
 
-## 5) Qué debes revisar para que funcione
+## 7) Qué debes revisar para que funcione
 
-- Debes tener `DEEPSEEK_API_KEY` configurada.
+- Debes tener `DEEPSEEK_API_KEY` configurada en el archivo `.env`.
 - Debe existir acceso a internet desde el backend.
-- La API debe devolver `choices[0].message.content` conteniendo un JSON.
+- La API debe devolver `choices[0].message.content` conteniendo un JSON válido.
+- Los archivos de prompt deben existir en `app/services/llm_service/prompt/`:
+  - `interpret_user_answer_prompt.txt`
+  - `generate_next_question_prompt.txt`
+  - `generate_final_descriptions_prompt.txt`
+
+## 8) Excepciones
+
+**ApiKeyError:**
+- Ubicación: `app/api/exceptions.py`
+- Se lanza cuando:
+  - `DEEPSEEK_API_KEY` no está configurada
+  - `DEEPSEEK_API_KEY` es un placeholder
+  - La API responde con 401 (autenticación fallida)
+- El Gateway la captura y la convierte a `GatewayError` con status_code 401.
 
 ---
 
-Si quieres, el siguiente paso es documentar cómo `dialogue_orchestrator` usa estas 3 funciones en un flujo real de conversación (ya está en su README).
+Si quieres, el siguiente paso es documentar cómo `DialogueOrchestrator` usa estos métodos en un flujo real de conversación (ya está en su README).

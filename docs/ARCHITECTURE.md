@@ -461,8 +461,3 @@ gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker
 - [Pydantic Docs](https://docs.pydantic.dev/)
 - [DeepSeek API](https://platform.deepseek.com/)
 - [Microservices Patterns](https://microservices.io/)
-
----
-
-**Versión:** 1.0.0
-**Última actualización:** 28 de Diciembre, 2025

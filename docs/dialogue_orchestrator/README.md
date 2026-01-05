@@ -10,7 +10,7 @@ Este servicio es el **“cerebro” que coordina la conversación** con el usuar
   3) cerrar la conversación (fase final).
 
 En este proyecto, el orquestador vive en:
-- Código: `python_backend/server/dialogue_orchestrator/orchestrator.py`
+- Código: `archssistant-backend/app/services/dialogue_orchestrator/orchestrator.py`
 
 Y depende de estos dos servicios:
 - `llm_service`: para interpretar respuestas y generar preguntas/descripciones.
@@ -21,7 +21,7 @@ Y depende de estos dos servicios:
 ## 2) Interfaces: entradas y salidas
 
 ### Entrada principal
-La función principal es `handle_message(history)`.
+El método principal es `handle_message(history)` de la clase `DialogueOrchestrator`.
 
 - `history` es una lista de mensajes (diccionarios). Cada mensaje suele tener:
   - `role`: quién habló (`user`, `assistant`, `user_description`, etc.)
@@ -73,13 +73,14 @@ Ejemplo:
 
 ## 4) Código completo (con números de línea)
 
-A continuación está el contenido de `python_backend/server/dialogue_orchestrator/orchestrator.py` con números de línea (para que la explicación sea exacta):
+A continuación está la estructura de la clase `DialogueOrchestrator` en `archssistant-backend/app/services/dialogue_orchestrator/orchestrator.py`:
 
 ```python
- 1  # server/dialogue_orchestrator/orchestrator.py
- 2  
- 3  from server.llm_service import interpret_user_answer, generate_next_question, generate_final_descriptions
- 4  from server.recommendation_engine import get_recommendation
+# app/services/dialogue_orchestrator/orchestrator.py
+
+from ..llm_service import LLMService
+from ..recommendation_engine import RecommendationEngine
+from app.core import get_logger
  5  
  6  ALL_PARAMETERS = [
  7      'complexity', 'scalability', 'teamExperience', 'dataVolume',
@@ -262,15 +263,16 @@ A continuación está el contenido de `python_backend/server/dialogue_orchestrat
 
 ## 5) Explicación línea por línea (sin omitir detalles)
 
-### Líneas 1-4: imports (dependencias)
-- **L1**: comentario con la ruta.
-- **L3**: importa 3 funciones del servicio `llm_service`:
-  - `interpret_user_answer`: clasifica la respuesta del usuario en categorías (ej. “Alta”, “Baja”, “UNCERTAIN”).
-  - `generate_next_question`: decide cuál es la próxima pregunta.
-  - `generate_final_descriptions`: genera textos para explicar la recomendación final.
-- **L4**: importa `get_recommendation` del motor de recomendación.
+### Imports y dependencias
+- Importa la clase `LLMService` y `RecommendationEngine` de los servicios correspondientes.
+- Importa `get_logger` de `app.core` para logging.
 
-**Idea clave**: este archivo no llama a DeepSeek directamente; delega eso en `llm_service`.
+**Estructura de clase:**
+- `__init__`: Inicializa dependencias (LLMService, RecommendationEngine) o crea nuevas instancias.
+- `get_conversation_state`: Método que extrae el estado de la conversación.
+- `handle_message`: Método principal que procesa los mensajes.
+
+**Idea clave**: Este archivo no llama a DeepSeek directamente; delega eso en `LLMService`. Tampoco calcula recomendaciones directamente; delega eso en `RecommendationEngine`.
 
 ### Líneas 6-9: lista de parámetros
 - **L6-L9**: `ALL_PARAMETERS` es la lista de “cosas que queremos saber” del proyecto.
@@ -278,8 +280,8 @@ A continuación está el contenido de `python_backend/server/dialogue_orchestrat
 
 **Por qué existe**: para saber qué falta por preguntar y evitar repetir.
 
-### Líneas 12-36: `get_conversation_state(history)`
-Esta función busca el último estado guardado en el historial.
+### `get_conversation_state(history)`
+Este método busca el último estado guardado en el historial.
 
 - **L17**: crea `last_assistant_message = None` (aún no encontró un mensaje del asistente).
 - **L18**: recorre el historial al revés con `reversed(history)`.
@@ -298,7 +300,7 @@ Esta función busca el último estado guardado en el historial.
 - `isClarifying`: si el usuario quedó confundido y hay que re-preguntar más fácil.
 - `status`: `interviewing` → `recommending` → `finished`.
 
-### Líneas 39-180: `handle_message(history)` (la función principal)
+### `handle_message(history)` (el método principal)
 
 #### Líneas 44-58: preparar contexto del usuario
 - **L44**: `user_message = history[-1]` toma el último mensaje del historial (el mensaje recién llegado).
@@ -321,7 +323,7 @@ Esta función busca el último estado guardado en el historial.
 - **L68-L69**: extrae:
   - `parameter_to_infer` (qué parámetro estábamos intentando deducir)
   - `question_text` (el texto exacto que se le preguntó)
-- **L71-L75**: llama al LLM (mediante `interpret_user_answer`) para clasificar la respuesta.
+- Llama al LLM mediante `self.llm_service.interpret_user_answer()` para clasificar la respuesta.
 
 **Clarificación**
 - **L78-L82**:
@@ -337,7 +339,7 @@ Esta función busca el último estado guardado en el historial.
 **Generación de la siguiente pregunta**
 - **L90**: arma `remaining_params` con comprensión de listas:
   - toma todos los `ALL_PARAMETERS` que todavía NO están en `inferredParams`.
-- **L92-L97**: llama `generate_next_question` al LLM.
+- Llama `self.llm_service.generate_next_question()` al LLM.
   - le pasa el historial, lo que falta, la interpretación anterior, y si estamos clarificando.
 
 **Mantener el parámetro si se está clarificando**
@@ -353,13 +355,14 @@ Esta función busca el último estado guardado en el historial.
 - **L119**: si el estado ya es `recommending`, se calcula la recomendación.
 
 **Calcular top arquitecturas**
-- **L120**: llama al motor `get_recommendation(state['inferredParams'])`.
+- Llama al motor `self.recommendation_engine.get_recommendation(state['inferredParams'])`.
 
 **Caso sin recomendaciones**
 - **L122-L128**: si viene vacío, responde un mensaje de error y termina.
 
 **Pedir descripciones al LLM**
-- **L134-L138**: llama `generate_final_descriptions(project_description, recommendations, history)`.
+- Llama `self.llm_service.generate_final_descriptions(project_description, recommendations, history)`.
+- Usa `self.logger.debug()` para logging en lugar de `print()`.
 
 **Enriquecer recomendaciones**
 - **L143-L166**: recorre cada recomendación y le agrega:
@@ -379,21 +382,55 @@ Detalles importantes:
 
 ---
 
-## 6) Detalles técnicos y “puntos a notar”
+## 6) Detalles técnicos y "puntos a notar"
 
 - Este orquestador usa **estado embebido** en el historial (dentro de mensajes del asistente). Eso evita usar base de datos, pero implica que el frontend debe reenviar el historial completo.
-- El umbral `>= 5` parámetros (L86) es una regla de negocio: “con 5 ya basta para recomendar”.
+- El umbral `>= 5` parámetros es una regla de negocio: "con 5 ya basta para recomendar".
+- El logging ahora se hace con `self.logger` en lugar de `print()`.
+- Las llamadas al LLM son síncronas (no async) aunque el servicio podría migrar a async en el futuro.
+
+## 7) Uso
+
+```python
+from app.services.dialogue_orchestrator import DialogueOrchestrator
+
+# Crear instancia
+orchestrator = DialogueOrchestrator()
+
+# Procesar mensaje
+result = orchestrator.handle_message(history)
+# Retorna: {'response': {...}, 'state': {...}}
+```
+
+**Con inyección de dependencias (para testing):**
+```python
+from app.services.dialogue_orchestrator import DialogueOrchestrator
+from app.services.llm_service import LLMService
+from app.services.recommendation_engine import RecommendationEngine
+
+# Crear con dependencias mock
+mock_llm = MockLLMService()
+mock_engine = MockRecommendationEngine()
+orchestrator = DialogueOrchestrator(
+    llm_service=mock_llm,
+    recommendation_engine=mock_engine
+)
+```
+
+## 8) Logging
+
+El orquestador usa logging estructurado:
+
+```python
+# Debug: Información detallada
+self.logger.debug(f"Generating descriptions for {len(recommendations)} architectures: {[r['name'] for r in recommendations]}")
+
+# Warning: Situaciones que requieren atención
+self.logger.warning(f"No description found for '{arch_name}'")
+```
+
+Todos los mensajes de logging están en inglés para consistencia.
 
 ---
 
-## 7) Preguntas típicas de novato (y respuestas)
-
-**¿Por qué `async def`?**
-Porque el orquestador espera llamadas al LLM (que son lentas). Con `await` (L71 y L92 y L134) el servidor puede manejar otras tareas mientras espera.
-
-**¿Por qué guardar `lastQuestion`?**
-Para saber qué parámetro está respondiendo el usuario en el siguiente mensaje.
-
----
-
-Si quieres, el siguiente paso natural es leer el endpoint HTTP que llama a `handle_message(history)` (normalmente en `python_backend/main.py`), porque eso conecta backend con frontend.
+Si quieres, el siguiente paso natural es leer el endpoint HTTP que llama a `handle_message(history)` (normalmente en `archssistant-backend/app/api/gateway.py`), porque eso conecta backend con frontend.
