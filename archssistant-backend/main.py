@@ -53,3 +53,13 @@ app.mount(
 )
 logger.info(f"Static files mounted from: {public_dir}")
 logger.info(f"API {config.APP_NAME} ready to receive requests")
+
+
+if __name__ == "__main__":
+    """Run the FastAPI server using uvicorn."""
+    uvicorn.run(
+        "main:app",
+        host=config.HOST,
+        port=config.PORT,
+        reload=True  # Auto-reload on code changes (development)
+    )

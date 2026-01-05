@@ -1,48 +1,42 @@
-# Arch-Assistant: Asistente de IA para Arquitectura de Software
+# Archssistant: Asistente de IA para Arquitectura de Software
 
 Aplicación web que proporciona recomendaciones de arquitectura de software mediante conversación interactiva con IA.
 
-**Status**: ✅ Arquitectura implementada con API Gateway y sistema de logging centralizado
+**Status**: ✅ Sistema completo con arquitectura modular y logging profesional
 
 ---
 
 ## 📋 Tabla de Contenidos
 
 - [Descripción General](#descripción-general)
+- [Características](#características)
 - [Arquitectura del Sistema](#arquitectura-del-sistema)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Requisitos Previos](#requisitos-previos)
 - [Instalación](#instalación)
 - [Configuración](#configuración)
-- [Uso](#uso)
+- [Ejecución](#ejecución)
 - [API REST](#api-rest)
 - [Sistema de Logging](#sistema-de-logging)
 - [Documentación Detallada](#documentación-detallada)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Descripción General
 
-**Arch-Assistant** es un asistente de IA que ayuda a equipos de desarrollo a encontrar la arquitectura de software más adecuada para sus proyectos mediante una conversación interactiva.
+**Archssistant** es un asistente de IA que ayuda a equipos de desarrollo a encontrar la arquitectura de software más adecuada para sus proyectos mediante una conversación interactiva.
 
-### Características Principales
+### Características
 
-✅ **Conversación Interactiva**: Diálogo natural que recopila información del proyecto
-✅ **Inferencia Inteligente**: Interpreta respuestas usando DeepSeek LLM
-✅ **Recomendaciones Personalizadas**: Top 3 arquitecturas basadas en parámetros inferidos
-✅ **Justificaciones Detalladas**: Explica por qué cada arquitectura es recomendada
-✅ **Historial Persistente**: Mantiene contexto completo de la conversación
-✅ **API RESTful**: Interfaz HTTP moderna y escalable
-✅ **Sistema de Logging Profesional**: Visibilidad completa del comportamiento
-
-### Componentes Principales
-
-- **Frontend**: Aplicación web interactiva (HTML/CSS/JavaScript)
-- **Backend FastAPI**: Servidor HTTP escalable y moderno
-- **API Gateway**: Validación centralizada y manejo de errores
-- **Dialogue Orchestrator**: Orquestación inteligente del flujo conversacional
-- **LLM Service**: Integración con DeepSeek para procesamiento semántico
-- **Recommendation Engine**: Motor de scoring para arquitecturas
+✅ **Conversación Interactiva**: Diálogo natural que recopila información del proyecto  
+✅ **Inferencia Inteligente**: Interpreta respuestas usando DeepSeek LLM  
+✅ **Recomendaciones Personalizadas**: Top 3 arquitecturas basadas en parámetros inferidos  
+✅ **Justificaciones Detalladas**: Explica por qué cada arquitectura es recomendada  
+✅ **Historial Persistente**: Mantiene contexto completo de la conversación  
+✅ **API RESTful**: Interfaz HTTP moderna y escalable  
+✅ **Sistema de Logging Profesional**: Visibilidad completa con niveles configurables  
+✅ **Arquitectura Modular**: Separación clara de responsabilidades con clases e interfaces  
 
 ---
 
@@ -56,28 +50,27 @@ Aplicación web que proporciona recomendaciones de arquitectura de software medi
                         │ HTTP REST
                         ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                      main.py (FastAPI)                       │
-│                   Punto de entrada                           │
-└──────────────────────┬────────────────────────────────────────┘
+│                  main.py (FastAPI)                           │
+│              Punto de entrada del servidor                   │
+└──────────────────────┬──────────────────────────────────────┘
                        │
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
-│            API Routes (python_backend/api/routes.py)         │
+│          API Routes (app/api/routes.py)                      │
 │                 POST /api/chat                               │
-└──────────────────────┬────────────────────────────────────────┘
+└──────────────────────┬──────────────────────────────────────┘
                        │
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
-│          API Gateway (python_backend/api/gateway.py)         │
+│       API Gateway (app/api/gateway.py) - ApiGateway          │
 │     ✓ Validación de entrada                                  │
 │     ✓ Logging centralizado                                   │
-│     ✓ Manejo de errores                                      │
-│     ✓ Request ID para trazabilidad                           │
-└──────────────────────┬────────────────────────────────────────┘
+│     ✓ Manejo de errores unificado (GatewayError)            │
+└──────────────────────┬──────────────────────────────────────┘
                        │
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
-│   Dialogue Orchestrator (dialogue_orchestrator/orchestrator) │
+│  Dialogue Orchestrator (DialogueOrchestrator)                │
 │     - Mantiene estado conversacional                         │
 │     - Interpreta respuestas del usuario                      │
 │     - Decide cuándo pasar a recomendación                    │
@@ -85,8 +78,7 @@ Aplicación web que proporciona recomendaciones de arquitectura de software medi
      │                      │
      ↓                      ↓
 ┌─────────────────────┐  ┌─────────────────────┐
-│   LLM Service       │  │ Recommendation      │
-│ (llm_service.py)    │  │ Engine (engine.py)  │
+│   LLMService        │  │ RecommendationEngine│
 │                     │  │                     │
 │ • interpret_answer  │  │ • scoring           │
 │ • generate_question │  │ • ranking           │
@@ -99,65 +91,67 @@ Aplicación web que proporciona recomendaciones de arquitectura de software medi
 ## Estructura del Proyecto
 
 ```
-Arch-Assistant/
-├── main.py                              # Punto de entrada FastAPI
-├── README.md                            # Este archivo
-├── requirements.txt                     # Dependencias Python
-├── .env                                 # Variables de entorno (NO versionar)
-├── .env.example                         # Plantilla de .env
-├── .gitignore                           # Archivos ignorados por git
-│
-├── public/                              # Frontend estático
-│   ├── index.html                       # Interfaz HTML
-│   ├── style.css                        # Estilos
-│   └── script.js                        # Lógica del cliente
-│
-├── python_backend/                      # Backend Python
-│   ├── config/                          # Configuración centralizada
-│   │   ├── __init__.py
-│   │   ├── logging_config.py           # Sistema de logging
-│   │   ├── logging_utils.py            # Decoradores y utilidades
-│   │   └── README.md                    # Documentación de logging
+Archssistant/
+├── archssistant-backend/          # Backend Python
+│   ├── main.py                    # Punto de entrada FastAPI
+│   ├── requirements.txt           # Dependencias Python
+│   ├── .env                       # Variables de entorno (NO versionar)
+│   ├── .gitignore                 # Archivos ignorados por git
 │   │
-│   ├── api/                             # Capa API HTTP
-│   │   ├── __init__.py
-│   │   ├── models.py                   # Modelos Pydantic (ChatRequest, ChatResponse)
-│   │   ├── routes.py                   # Endpoints (/api/chat)
-│   │   ├── gateway.py                  # API Gateway (validación, logging)
-│   │   └── __init__.py
-│   │
-│   └── server/                          # Lógica de negocio
-│       ├── dialogue_orchestrator/       # Orquestador conversacional
+│   └── app/                       # Paquete principal
+│       ├── api/                   # Capa API HTTP
 │       │   ├── __init__.py
-│       │   ├── orchestrator.py          # Flujo conversacional
-│       │   └── __pycache__/
+│       │   ├── models.py          # Modelos Pydantic (ChatRequest, ChatResponse)
+│       │   ├── routes.py          # Endpoints (/api/chat)
+│       │   ├── gateway.py         # ApiGateway (validación, logging)
+│       │   └── exceptions.py      # Excepciones personalizadas
 │       │
-│       ├── llm_service/                 # Servicio LLM (DeepSeek)
+│       ├── core/                  # Configuración centralizada
 │       │   ├── __init__.py
-│       │   ├── llm_service.py           # Integración DeepSeek
-│       │   ├── prompt/                  # Archivos de prompt
-│       │   │   ├── interpret_user_answer_prompt.txt
-│       │   │   ├── generate_next_question_prompt.txt
-│       │   │   └── generate_final_descriptions_prompt.txt
-│       │   └── __pycache__/
+│       │   ├── config.py          # Config (BaseSettings) con APP_NAME, LOG_LEVEL, PORT, HOST
+│       │   ├── logging_config.py  # Sistema de logging
+│       │   └── logging_utils.py   # Funciones de dominio
 │       │
-│       └── recommendation_engine/       # Motor de recomendación
-│           ├── __init__.py
-│           ├── engine.py                # Scoring y ranking
-│           ├── architecture_data.py     # Catálogo de arquitecturas
-│           └── __pycache__/
+│       └── services/              # Lógica de negocio
+│           ├── dialogue_orchestrator/
+│           │   └── orchestrator.py  # DialogueOrchestrator
+│           │
+│           ├── llm_service/         # LLMService
+│           │   ├── __init__.py
+│           │   ├── llm_service.py
+│           │   └── prompt/          # Archivos de prompt
+│           │       ├── interpret_user_answer_prompt.txt
+│           │       ├── generate_next_question_prompt.txt
+│           │       └── generate_final_descriptions_prompt.txt
+│           │
+│           └── recommendation_engine/
+│               ├── __init__.py
+│               ├── engine.py        # RecommendationEngine
+│               └── architecture_data.py  # Catálogo de arquitecturas
 │
-├── documentation/                       # Documentación técnica
-│   ├── dialogue_orchestrator/README.md
-│   ├── llm_service/README.md
-│   └── recommendation_engine/README.md
+├── public/                        # Frontend estático
+│   ├── index.html                 # Interfaz HTML
+│   ├── style.css                  # Estilos
+│   └── script.js                  # Lógica del cliente
 │
-├── logs/                                # Archivos de log (NO versionar)
-│   ├── debug.log                        # Todos los logs (modo debug)
-│   ├── info.log                         # INFO y superiores
-│   └── error.log                        # Solo ERROR y CRITICAL
+├── docs/                          # Documentación técnica
+│   ├── ARCHITECTURE.md            # Arquitectura general del sistema
+│   ├── LOGGING.md                 # Documentación del sistema de logging
+│   ├── api_gateway/
+│   │   └── README.md
+│   ├── dialogue_orchestrator/
+│   │   └── README.md
+│   ├── llm_service/
+│   │   └── README.md
+│   └── recommendation_engine/
+│       └── README.md
 │
-└── venv/                                # Entorno virtual (NO versionar)
+├── logs/                          # Archivos de log (NO versionar)
+│   ├── debug.log                  # Todos los logs (solo si LOG_LEVEL=DEBUG)
+│   ├── info.log                   # INFO y WARNING
+│   └── error.log                  # ERROR y CRITICAL
+│
+└── README.md                      # Este archivo
 ```
 
 ---
@@ -186,7 +180,13 @@ git clone https://github.com/JessusTM/Archssistant.git
 cd Archssistant
 ```
 
-### Paso 2: Crear Entorno Virtual
+### Paso 2: Navegar al Backend
+
+```bash
+cd archssistant-backend
+```
+
+### Paso 3: Crear Entorno Virtual
 
 **Windows:**
 ```bash
@@ -200,7 +200,7 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
-### Paso 3: Instalar Dependencias
+### Paso 4: Instalar Dependencias
 
 ```bash
 pip install -r requirements.txt
@@ -212,87 +212,135 @@ pip install -r requirements.txt
 - `requests==2.32.3` - Cliente HTTP
 - `python-dotenv==1.0.1` - Gestión de variables de entorno
 - `pydantic==2.6.4` - Validación de datos
-
-### Paso 4: Configurar Variables de Entorno
-
-Crea archivo `.env` en la raíz del proyecto:
-
-```bash
-# Windows
-copy .env.example .env
-
-# macOS/Linux
-cp .env.example .env
-```
-
-Edita `.env` con tus credenciales:
-
-```env
-DEEPSEEK_API_KEY=sk_your_api_key_here
-PORT=5000
-HOST=0.0.0.0
-```
+- `pydantic-settings==2.1.0` - Configuración con BaseSettings
+- `colorlog==6.8.0` - Colores automáticos en logs
 
 ---
 
 ## Configuración
 
+### Paso 1: Crear Archivo .env
+
+Crea un archivo `.env` en el directorio `archssistant-backend/`:
+
+**Windows:**
+```bash
+cd archssistant-backend
+copy .env.example .env
+```
+
+**macOS/Linux:**
+```bash
+cd archssistant-backend
+cp .env.example .env
+```
+
+### Paso 2: Configurar Variables de Entorno
+
+Edita el archivo `.env` con tus credenciales:
+
+```env
+# Clave API de DeepSeek (REQUERIDA)
+DEEPSEEK_API_KEY=sk_your_api_key_here
+
+# Configuración del servidor
+HOST=0.0.0.0
+PORT=5000
+
+# Nivel de logging
+# Valores válidos: DEBUG, INFO, WARNING, ERROR, CRITICAL
+# DEBUG: Todos los logs (desarrollo)
+# INFO: Logs informativos y superiores (producción por defecto)
+LOG_LEVEL=INFO
+```
+
 ### Variables de Entorno
 
-El archivo `.env` debe contener:
+| Variable | Descripción | Requerida | Valor por Defecto |
+|----------|-------------|-----------|-------------------|
+| `DEEPSEEK_API_KEY` | Clave API de DeepSeek | ✅ Sí | - |
+| `HOST` | Host del servidor | ❌ No | `0.0.0.0` |
+| `PORT` | Puerto del servidor | ❌ No | `5000` |
+| `LOG_LEVEL` | Nivel de logging | ❌ No | `INFO` |
 
-| Variable | Descripción | Ejemplo |
-|----------|-------------|---------|
-| `DEEPSEEK_API_KEY` | Clave API de DeepSeek | `sk_...` |
-| `PORT` | Puerto del servidor | `5000` |
-| `HOST` | Host del servidor | `0.0.0.0` |
-
-### Seguridad (gitignore)
+### Seguridad
 
 ⚠️ **Importante**: Nunca versionar estos archivos:
-- `.env` - Credenciales
+- `.env` - Contiene credenciales
 - `venv/` - Entorno virtual
 - `logs/` - Archivos de log
 - `__pycache__/` - Caché de Python
-- `*.key`, `*.pem`, `*.cert` - Claves privadas
 
 El `.gitignore` excluye automáticamente estos archivos.
 
 ---
 
-## Uso
+## Ejecución
 
-### Iniciar el Servidor
+### Paso 1: Activar el Entorno Virtual
+
+Asegúrate de que el entorno virtual esté activado:
+
+**Windows:**
+```bash
+venv\Scripts\activate
+```
+
+**macOS/Linux:**
+```bash
+source venv/bin/activate
+```
+
+### Paso 2: Verificar Configuración
+
+Asegúrate de estar en el directorio `archssistant-backend/`:
 
 ```bash
-# Asegúrate de que el venv está activado
+cd archssistant-backend
+```
+
+### Paso 3: Iniciar el Servidor
+
+```bash
 python main.py
 ```
 
 **Salida esperada:**
 ```
 ================================================================================
-2025-12-28 10:30:45,123 - __main__ - INFO - Inicializando Arch-Assistant API...
-2025-12-28 10:30:45,234 - __main__ - INFO - CORS habilitado para todos los orígenes
-2025-12-28 10:30:45,345 - __main__ - INFO - Routers de API registrados
-2025-12-28 10:30:45,456 - __main__ - INFO - Archivos estáticos montados desde: ...
-2025-12-28 10:30:45,567 - __main__ - INFO - Arch-Assistant API lista para recibir solicitudes
+2025-01-XX 10:30:45,123 - app.core.config - INFO - Configuration initialized for Archssistant
+2025-01-XX 10:30:45,234 - app.core.config - INFO - Log level : INFO
+2025-01-XX 10:30:45,345 - app.core.config - INFO - Host      : 0.0.0.0
+2025-01-XX 10:30:45,456 - app.core.config - INFO - Port      : 5000
 ================================================================================
+2025-01-XX 10:30:45,567 - __main__ - INFO - Initializing API: Archssistant
+2025-01-XX 10:30:45,678 - __main__ - INFO - CORS middleware enabled for all origins
+2025-01-XX 10:30:45,789 - __main__ - INFO - API routers registered
+2025-01-XX 10:30:45,890 - __main__ - INFO - Static files mounted from: .../public
+2025-01-XX 10:30:45,901 - __main__ - INFO - API Archssistant ready to receive requests
+INFO:     Started server process [12345]
+INFO:     Waiting for application startup.
+INFO:     Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
 ```
 
-### Acceder a la Aplicación
+### Paso 4: Acceder a la Aplicación
 
 Abre el navegador en:
 ```
 http://localhost:5000
 ```
 
+### Detener el Servidor
+
+Presiona `CTRL+C` en la terminal donde se está ejecutando el servidor.
+
 ---
 
 ## API REST
+
 ### Endpoint: POST /api/chat
 
-**URL:** `POST /api/chat`
+**URL:** `http://localhost:5000/api/chat`
 
 **Request:**
 ```json
@@ -304,7 +352,16 @@ http://localhost:5000
     },
     {
       "role": "assistant",
-      "content": "¿Cuál es la complejidad esperada de tu proyecto?"
+      "content": "¿Cuál es la complejidad esperada de tu proyecto?",
+      "state": {
+        "inferredParams": {},
+        "lastQuestion": {
+          "parameter_to_infer": "complexity",
+          "question_text": "¿Cuál es la complejidad esperada de tu proyecto?"
+        },
+        "isClarifying": false,
+        "status": "interviewing"
+      }
     },
     {
       "role": "user",
@@ -314,30 +371,55 @@ http://localhost:5000
 }
 ```
 
-**Response (en fase de entrevista):**
+**Response (200) - En fase de entrevista:**
 ```json
 {
   "response": {
     "role": "assistant",
-    "content": "¿Cuántas personas componen tu equipo de desarrollo?"
+    "content": "Entendido, una complejidad moderada. ¿Cuántas personas componen tu equipo de desarrollo?"
   },
   "state": {
     "status": "interviewing",
     "inferredParams": {
       "complexity": "Moderada"
     },
-    "lastQuestion": "complexity",
+    "lastQuestion": {
+      "parameter_to_infer": "teamSize",
+      "question_text": "¿Cuántas personas componen tu equipo de desarrollo?"
+    },
     "isClarifying": false
   }
 }
 ```
 
-**Response (cuando se generan recomendaciones):**
+**Response (200) - Con recomendaciones:**
 ```json
 {
   "response": {
     "role": "assistant",
-    "content": "He analizado tu proyecto y aquí están las 3 arquitecturas más recomendadas..."
+    "content": "¡Gracias! He analizado tus respuestas.",
+    "recommendation": [
+      {
+        "name": "Arquitectura de Microservicios",
+        "description": "Divide tu aplicación en servicios independientes...",
+        "justification": "Es ideal para escalabilidad y equipos distribuidos...",
+        "complexity": "Alta",
+        "scalability": "Alta",
+        "score": 18
+      },
+      {
+        "name": "Arquitectura en la Nube",
+        "description": "Aprovecha servicios cloud para tu infraestructura...",
+        "justification": "Ofrece elasticidad y manejo automático de carga...",
+        "score": 17
+      },
+      {
+        "name": "Arquitectura de Capas",
+        "description": "Organiza tu aplicación en capas...",
+        "justification": "Simple de entender para equipos pequeños...",
+        "score": 14
+      }
+    ]
   },
   "state": {
     "status": "finished",
@@ -348,155 +430,66 @@ http://localhost:5000
       "availability": "Alta",
       "dataVolume": "Alto"
     }
-  },
-  "recommendation": [
-    {
-      "name": "Arquitectura de Microservicios",
-      "description": "Divide tu aplicación en servicios independientes...",
-      "justification": "Es ideal para escalabilidad y équipos distribuidos...",
-      "score": 18
-    },
-    {
-      "name": "Arquitectura en la Nube",
-      "description": "Aprovecha servicios cloud para tu infraestructura...",
-      "justification": "Oferece elasticidad y manejo automático de carga...",
-      "score": 17
-    },
-    {
-      "name": "Arquitectura de Capas",
-      "description": "Organiza tu aplicación en capas (presentación, lógica, datos)...",
-      "justification": "Simple de entender para equipos pequeños...",
-      "score": 14
-    }
-  ]
+  }
 }
 ```
+
+**Errores:**
+- `400`: Request inválida (historial vacío, estructura incorrecta)
+- `401`: Error de autenticación con DeepSeek API
+- `500`: Error interno del servidor
 
 ---
 
 ## Sistema de Logging
 
-Arch-Assistant incluye un sistema de logging profesional y centralizado para debugging, monitoreo y auditoría.
+Archssistant incluye un sistema de logging profesional y centralizado.
 
 ### Características
 
-✅ **Configuración centralizada** en `python_backend/config/`
-✅ **Múltiples handlers** (consola, archivo info, archivo error)
-✅ **Rotación automática** de logs (10 MB por archivo)
-✅ **Decoradores** para rastrear funciones automáticamente
-✅ **Eventos de dominio** para operaciones específicas
-✅ **Colores en consola** para fácil lectura
+✅ **Configuración centralizada** en `app/core/`  
+✅ **Colores automáticos** con `colorlog` (solo en terminal)  
+✅ **Niveles configurables** vía `.env` (DEBUG, INFO, WARNING, ERROR, CRITICAL)  
+✅ **Múltiples handlers** (consola, info.log, error.log)  
+✅ **Rotación automática** de logs (10 MB por archivo, 5 backups)  
+✅ **Logging estructurado** con mensajes en inglés  
+
+### Configuración
+
+El nivel de logging se configura en `.env`:
+
+```env
+# Desarrollo: ver todos los logs
+LOG_LEVEL=DEBUG
+
+# Producción: solo logs importantes
+LOG_LEVEL=INFO
+```
 
 ### Archivos de Log
 
-Los logs se guardan en el directorio `logs/`:
+Los logs se guardan en `archssistant-backend/logs/`:
 
 ```
 logs/
-├── debug.log       # Todos los logs (modo debug únicamente)
-├── info.log        # INFO, WARNING (excluye DEBUG y ERROR)
-└── error.log       # Solo ERROR y CRITICAL
+├── debug.log       # Todos los logs (solo si LOG_LEVEL=DEBUG)
+├── info.log        # INFO y WARNING (siempre)
+└── error.log       # ERROR y CRITICAL (siempre)
 ```
 
-### Usando el Logger
+### Ver Logs en Tiempo Real
 
-En cualquier módulo:
-
-```python
-from python_backend.config import get_logger
-
-logger = get_logger(__name__)
-
-logger.info("Evento importante")
-logger.warning("Advertencia")
-logger.error("Error no crítico")
-logger.critical("Error crítico")
+**Windows PowerShell:**
+```powershell
+Get-Content archssistant-backend\logs\info.log -Tail 20 -Wait
 ```
 
-### Decoradores
-
-```python
-from python_backend.config import log_function_call, log_performance
-
-@log_function_call
-def process_data(x, y):
-    """Se registra entrada y salida automáticamente"""
-    return x + y
-
-@log_performance
-def expensive_operation():
-    """Se mide el tiempo de ejecución"""
-    pass
+**Linux/Mac:**
+```bash
+tail -f archssistant-backend/logs/info.log
 ```
 
-### Funciones de Dominio
-
-```python
-from python_backend.config import (
-    log_orchestration_event,
-    log_llm_call,
-    log_recommendation_event
-)
-
-# En orchestrator
-log_orchestration_event(
-    event_type='answer_received',
-    phase='interviewing',
-    message='Usuario respondió sobre scalability',
-    extra_data={'parameter': 'scalability', 'value': 'Alta'}
-)
-
-# En llm_service
-log_llm_call(
-    operation='interpret',
-    input_summary='Usuario: "Startup pequeña"',
-    output_summary='teamSize=Pequeño'
-)
-
-# En engine
-log_recommendation_event(
-    stage='scoring',
-    message='Calculando puntajes',
-    extra_data={'architectures_count': 5}
-)
-```
-
-Para documentación completa del sistema de logging, consulta [python_backend/config/README.md](python_backend/config/README.md).
-
----
-
-## Personalizar Arquitecturas
-
-Las arquitecturas recomendadas se definen en [python_backend/server/recommendation_engine/architecture_data.py](python_backend/server/recommendation_engine/architecture_data.py).
-
-### Agregar una Arquitectura
-
-```python
-{
-    'name': 'Arquitectura Hexagonal',
-    'complexity': 'Alta',
-    'scalability': 'Moderada',
-    'teamExperience': 'Alta',
-    'dataVolume': 'Moderado',
-    'teamSize': 'Moderado',
-    'availability': 'Alta',
-    'maintainability': 'Excelente',
-    'interoperability': 'Alta'
-}
-```
-
-### Valores Permitidos
-
-| Parámetro | Valores Permitidos |
-|-----------|-------------------|
-| `complexity` | Baja, Moderada, Alta, Excelente |
-| `scalability` | Baja, Moderada, Alta, Excelente |
-| `teamExperience` | Baja, Moderada, Alta, Excelente |
-| `dataVolume` | Moderado, Alto, Excelente |
-| `teamSize` | Pequeño, Moderado, Grande, Alto |
-| `availability` | Baja, Moderada, Alta, Excelente |
-| `maintainability` | Baja, Moderada, Alta, Excelente |
-| `interoperability` | Baja, Moderada, Alta, Excelente |
+Para más información, consulta [docs/LOGGING.md](docs/LOGGING.md).
 
 ---
 
@@ -504,10 +497,12 @@ Las arquitecturas recomendadas se definen en [python_backend/server/recommendati
 
 Para documentación técnica detallada de cada componente, consulta:
 
-- [Dialogue Orchestrator](documentation/dialogue_orchestrator/README.md)
-- [LLM Service](documentation/llm_service/README.md)
-- [Recommendation Engine](documentation/recommendation_engine/README.md)
-- [Sistema de Logging](python_backend/config/README.md)
+- **[Arquitectura General](docs/ARCHITECTURE.md)** - Visión general del sistema
+- **[Sistema de Logging](docs/LOGGING.md)** - Documentación completa del logging
+- **[API Gateway](docs/api_gateway/README.md)** - Validación y manejo de errores
+- **[Dialogue Orchestrator](docs/dialogue_orchestrator/README.md)** - Orquestación conversacional
+- **[LLM Service](docs/llm_service/README.md)** - Integración con DeepSeek
+- **[Recommendation Engine](docs/recommendation_engine/README.md)** - Motor de recomendaciones
 
 ---
 
@@ -515,19 +510,19 @@ Para documentación técnica detallada de cada componente, consulta:
 
 ### Error: ModuleNotFoundError
 
-**Problema:** `ModuleNotFoundError: No module named 'python_backend'`
+**Problema:** `ModuleNotFoundError: No module named 'app'`
 
 **Solución:**
-1. Asegúrate que estás en la carpeta raíz del proyecto
+1. Asegúrate de estar en el directorio `archssistant-backend/`
 2. Verifica que el venv está activado
 3. Ejecuta: `pip install -r requirements.txt`
 
 ### Error: DEEPSEEK_API_KEY no encontrada
 
-**Problema:** `ApiKeyError: DEEPSEEK_API_KEY no configurada`
+**Problema:** `ApiKeyError: La clave de API no está configurada (DEEPSEEK_API_KEY).`
 
 **Solución:**
-1. Crea `.env` en la raíz del proyecto
+1. Crea `.env` en `archssistant-backend/`
 2. Añade tu clave API: `DEEPSEEK_API_KEY=sk_...`
 3. Reinicia el servidor
 
@@ -537,7 +532,81 @@ Para documentación técnica detallada de cada componente, consulta:
 
 **Solución:**
 1. Cambia el puerto en `.env`: `PORT=5001`
-2. O mata el proceso en ese puerto
+2. O mata el proceso en ese puerto:
+   - **Windows:** `netstat -ano | findstr :5000` luego `taskkill /PID <PID> /F`
+   - **Linux/Mac:** `lsof -ti:5000 | xargs kill`
+
+### Error: LOG_LEVEL inválido
+
+**Problema:** Logging no funciona correctamente
+
+**Solución:**
+- Verifica que `LOG_LEVEL` en `.env` sea uno de: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
+- Si no está configurado, usa `INFO` por defecto
+
+### Error: No se pueden cargar los prompts
+
+**Problema:** `FileNotFoundError: prompt/interpret_user_answer_prompt.txt`
+
+**Solución:**
+- Verifica que los archivos de prompt existan en `app/services/llm_service/prompt/`
+- Si faltan, clona nuevamente el repositorio
+
+---
+
+## Tecnologías Utilizadas
+
+### Frontend
+- HTML5
+- CSS3
+- JavaScript (Vanilla ES6+)
+- Canvas API (para animaciones)
+
+### Backend
+- **Python 3.8+**
+- **FastAPI 0.110.0** - Framework web moderno
+- **Uvicorn 0.27.1** - Servidor ASGI
+- **Pydantic 2.6.4** - Validación de datos
+- **Pydantic Settings 2.1.0** - Configuración con BaseSettings
+- **Requests 2.32.3** - Cliente HTTP
+- **python-dotenv 1.0.1** - Gestión de variables de entorno
+- **colorlog 6.8.0** - Colores automáticos en logs
+
+### APIs Externas
+- **DeepSeek API** - https://api.deepseek.com/v1/chat/completions
+
+---
+
+## Parámetros Inferidos
+
+El sistema intenta inferir estos 8 parámetros durante la conversación:
+
+1. `complexity` - Baja, Moderada, Alta, Excelente
+2. `scalability` - Baja, Moderada, Alta, Excelente
+3. `teamExperience` - Baja, Moderada, Alta, Excelente
+4. `dataVolume` - Moderado, Alto, Excelente
+5. `teamSize` - Pequeño, Moderado, Grande, Alto
+6. `availability` - Baja, Moderada, Alta, Excelente
+7. `maintainability` - Baja, Moderada, Alta, Excelente
+8. `interoperability` - Baja, Moderada, Alta, Excelente
+
+Cuando se recopilan ≥5 parámetros, el sistema genera recomendaciones.
+
+---
+
+## Arquitecturas Soportadas
+
+El sistema recomienda de estas 7 opciones:
+
+1. **Arquitectura Monolítica** - Baja complejidad, baja escalabilidad
+2. **Arquitectura de Microservicios** - Alta complejidad, alta escalabilidad
+3. **Arquitectura Orientada a Servicios (SOA)** - Alta complejidad, escalabilidad moderada
+4. **Arquitectura de Capas** - Alta complejidad, escalabilidad moderada
+5. **Arquitectura Cliente-Servidor** - Complejidad moderada, alta escalabilidad
+6. **Arquitectura en la Nube** - Alta complejidad, escalabilidad excelente
+7. **Arquitectura Basada en Eventos (EDA)** - Alta complejidad, alta escalabilidad
+
+Cada una tiene valores para: complexity, scalability, teamExperience, dataVolume, teamSize, availability, maintainability, interoperability.
 
 ---
 
@@ -561,164 +630,10 @@ Este proyecto está bajo licencia MIT. Ver archivo `LICENSE` para más detalles.
 
 ## Contacto
 
-**Autor:** JessusTM
-**Email:** [tu-email@example.com]
+**Autor:** JessusTM  
 **GitHub:** https://github.com/JessusTM/Archssistant
 
 ---
 
-## Roadmap
-
-- [ ] Autenticación de usuarios
-- [ ] Persistencia de conversaciones en BD
-- [ ] Más arquitecturas (DDD, CQRS, Event Sourcing)
-- [ ] Exportar recomendaciones a PDF
-- [ ] Integración con figma para diagramas
-- [ ] Análisis de costos por arquitectura
-- [ ] Soporte multiidioma
-
----
-
-**Última actualización:** 28 de Diciembre, 2025
-**Versión:** 1.0.0
-- Manejo de excepciones: 400, 401, 500
-- Lee variables de entorno: PORT (defecto 5000), HOST (defecto 0.0.0.0)
-
----
-
-## API REST
-
-### Endpoint: POST /api/chat
-
-**URL:** `http://localhost:5000/api/chat`
-
-**Request:**
-```json
-{
-  "history": [
-    {"role": "user", "content": "texto"},
-    {"role": "assistant", "content": "respuesta", "state": {...}}
-  ]
-}
-```
-
-**Response (200):**
-```json
-{
-  "response": {
-    "role": "assistant",
-    "content": "texto",
-    "recommendation": [...]  // null si no hay recomendación
-  },
-  "state": {
-    "inferredParams": {...},
-    "lastQuestion": {...},
-    "isClarifying": boolean,
-    "status": "string"
-  }
-}
-```
-
-**Errores:**
-- 400: historial no es array
-- 401: problema con clave API DeepSeek
-- 500: error interno
-
----
-
-## Arquitecturas Soportadas
-
-El sistema recomienda de estas 7 opciones:
-
-1. **Arquitectura Monolítica** - Baja complejidad, baja escalabilidad
-2. **Arquitectura de Microservicios** - Alta complejidad, alta escalabilidad
-3. **Arquitectura Orientada a Servicios (SOA)** - Alta complejidad, escalabilidad moderada
-4. **Arquitectura de Capas** - Alta complejidad, escalabilidad moderada
-5. **Arquitectura Cliente-Servidor** - Complejidad moderada, alta escalabilidad
-6. **Arquitectura en la Nube** - Alta complejidad, escalabilidad excelente
-7. **Arquitectura Basada en Eventos (EDA)** - Alta complejidad, alta escalabilidad
-
-Cada una tiene valores para: complexity, scalability, teamExperience, dataVolume, teamSize, availability, maintainability, interoperability.
-
----
-
-## Tecnologías Utilizadas
-
-### Frontend
-- HTML5
-- CSS3
-- JavaScript (Vanilla ES6+)
-- Canvas API (para animaciones)
-- Google Fonts (Orbitron, Rajdhani, Space Mono)
-
-### Backend
-- Python
-- FastAPI 0.110.0
-- Uvicorn 0.27.1
-- Pydantic 2.6.4
-- Requests 2.32.3
-- python-dotenv 1.0.1
-
-### APIs Externas
-- DeepSeek API (https://api.deepseek.com/v1/chat/completions)
-
----
-
-## Parámetros Inferidos
-
-El sistema intenta inferir estos 8 parámetros:
-
-1. `complexity` - Baja, Moderada, Alta, Excelente
-2. `scalability` - Baja, Moderada, Alta, Excelente
-3. `teamExperience` - Baja, Moderada, Alta, Excelente
-4. `dataVolume` - Moderado, Alto, Excelente
-5. `teamSize` - Pequeño, Moderado, Grande, Alto
-6. `availability` - Baja, Moderada, Alta, Excelente
-7. `maintainability` - Baja, Moderada, Alta, Excelente
-8. `interoperability` - Baja, Moderada, Alta, Excelente
-
-Cuando se recopilan ≥5, el sistema genera recomendación.
-
----
-
-## Flujo de Ejecución
-
-1. Usuario abre http://localhost:5000
-2. Carga index.html + script.js + style.css
-3. script.js inicia conversationHistory = []
-4. Usuario escribe mensaje y hace submit
-5. script.js hace POST /api/chat con {history: [...]}
-6. main.py recibe, llama handle_message()
-7. orchestrator.py procesa según estado:
-   - Si primera vez: marca como user_description, inicia entrevista
-   - Si interviewing: interpreta respuesta, genera siguiente pregunta
-   - Si >= 5 parámetros: status = recommending
-   - Si recommending: obtiene TOP 3 y genera descripciones
-8. Retorna response + state actualizado
-9. script.js actualiza DOM con respuesta
-10. Muestra progreso (parámetros recopilados / 5)
-
----
-
-## Notas Importantes
-
-- El archivo `.env` NO se sube a Git (está en .gitignore)
-- La carpeta `python_backend/venv` está en .gitignore
-- El proyecto usa async/await en Python
-- DeepSeek API requiere autenticación con Bearer token
-- Las respuestas de DeepSeek deben ser JSON válido
-
----
-
-## Autores
-
-- J. Tapia
-- Z. Xiao
-
----
-
-## Referencias
-
-- Repositorio: https://github.com/JessusTM/Archssistant
-- FastAPI docs: https://fastapi.tiangolo.com/
-- DeepSeek API: https://www.deepseek.com/
+**Versión:** 2.0.0  
+**Última actualización:** Enero 2025
