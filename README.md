@@ -62,28 +62,21 @@ Aplicación web que proporciona recomendaciones de arquitectura de software medi
                        │
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
-│       API Gateway (app/api/gateway.py) - ApiGateway          │
-│     ✓ Validación de entrada                                  │
-│     ✓ Logging centralizado                                   │
-│     ✓ Manejo de errores unificado (GatewayError)            │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-                       ↓
-┌─────────────────────────────────────────────────────────────┐
-│  Dialogue Orchestrator (DialogueOrchestrator)                │
-│     - Mantiene estado conversacional                         │
-│     - Interpreta respuestas del usuario                      │
-│     - Decide cuándo pasar a recomendación                    │
-└────┬──────────────────────┬────────────────────────────────┘
-     │                      │
-     ↓                      ↓
-┌─────────────────────┐  ┌─────────────────────┐
-│   LLMService        │  │ RecommendationEngine│
-│                     │  │                     │
-│ • interpret_answer  │  │ • scoring           │
-│ • generate_question │  │ • ranking           │
-│ • generate_desc     │  │ • top 3 results     │
-└─────────────────────┘  └─────────────────────┘
+│               Orchestrator                                  │
+│        (app/services/orchestrator/Orchestrator)              │
+└───────────────┬───────────────────────┬─────────────────────┘
+                │                       │
+                ↓                       ↓
+┌──────────────────────────┐   ┌──────────────────────────────┐
+│   Elicitation Machine    │   │        Decision Maker         │
+│ (infer variables w/ LLM) │   │ (evaluate rules / scoring)    │
+└──────────────┬───────────┘   └──────────────┬───────────────┘
+               │                              │
+               ↓                              ↓
+┌──────────────────────────┐   ┌──────────────────────────────┐
+│ Recommendation Explainer │   │  Symbolic Knowledge Base      │
+│ (LLM descriptions)       │   │ (catalog + mappings)          │
+└──────────────────────────┘   └──────────────────────────────┘
 ```
 
 ---
@@ -103,7 +96,6 @@ Archssistant/
 │       │   ├── __init__.py
 │       │   ├── models.py          # Modelos Pydantic (ChatRequest, ChatResponse)
 │       │   ├── routes.py          # Endpoints (/api/chat)
-│       │   ├── gateway.py         # ApiGateway (validación, logging)
 │       │   └── exceptions.py      # Excepciones personalizadas
 │       │
 │       ├── core/                  # Configuración centralizada
@@ -113,21 +105,12 @@ Archssistant/
 │       │   └── logging_utils.py   # Funciones de dominio
 │       │
 │       └── services/              # Lógica de negocio
-│           ├── dialogue_orchestrator/
-│           │   └── orchestrator.py  # DialogueOrchestrator
-│           │
-│           ├── llm_service/         # LLMService
-│           │   ├── __init__.py
-│           │   ├── llm_service.py
-│           │   └── prompt/          # Archivos de prompt
-│           │       ├── interpret_user_answer_prompt.txt
-│           │       ├── generate_next_question_prompt.txt
-│           │       └── generate_final_descriptions_prompt.txt
-│           │
-│           └── recommendation_engine/
-│               ├── __init__.py
-│               ├── engine.py        # RecommendationEngine
-│               └── architecture_data.py  # Catálogo de arquitecturas
+│           ├── orchestrator/                # Orchestrator (flujo conversacional)
+│           ├── elicitation_machine/         # Inferencia + preguntas (LLM)
+│           │   └── prompt/                  # Prompts del LLM
+│           ├── recommendation_explainer/    # Descripciones/justificaciones (LLM)
+│           ├── decision_maker/              # Scoring/ranking determinístico
+│           └── symbolic_knowledge_base/     # Catálogo + mapeos simbólicos
 │
 ├── archssistant-frontend/         # Frontend estático
 │   ├── index.html                 # Interfaz HTML
@@ -501,7 +484,6 @@ Para documentación técnica detallada de cada componente, consulta:
 
 - **[Arquitectura General](docs/ARCHITECTURE.md)** - Visión general del sistema
 - **[Sistema de Logging](docs/LOGGING.md)** - Documentación completa del logging
-- **[API Gateway](docs/api_gateway/README.md)** - Validación y manejo de errores
 - **[Dialogue Orchestrator](docs/dialogue_orchestrator/README.md)** - Orquestación conversacional
 - **[LLM Service](docs/llm_service/README.md)** - Integración con DeepSeek
 - **[Recommendation Engine](docs/recommendation_engine/README.md)** - Motor de recomendaciones

@@ -1,27 +1,28 @@
-"""Definition of routes and endpoints of the Arch-Assistant API.
+"""Definition of routes and endpoints of the Archssistant API.
 
-Define the HTTP endpoints that expose the application. Here, each endpoint
-acts as an entry point for client requests, delegating all validation and
-validation and processing to the API Gateway.
+HTTP adapter layer:
+- Validates minimal request shape (history)
+- Delegates business logic to the Orchestrator
+- Translates domain exceptions into HTTP status codes
 """
 
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
 
 from .models import ChatRequest, ChatResponse
-from .gateway import ApiGateway
-from .exceptions import GatewayError
+from .exceptions import GatewayError, ApiKeyError
 from ..core import get_logger
+from ..services.orchestrator import Orchestrator
 
 router  = APIRouter(prefix='/api', tags=['chat'])
-gateway = ApiGateway()
+orchestrator = Orchestrator()
 logger  = get_logger(__name__) 
 
 
 @router.post('/chat', response_model=ChatResponse)
 def chat(request: ChatRequest) -> Dict[str, Any]:
     """
-    Entry point for chat requests. All validation, logging, and processing logic is delegated to the API Gateway.
+    Entry point for chat requests.
 
     Args:
         request: Validated JSON body by Pydantic (ChatRequest). Must contain
@@ -40,29 +41,41 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
             - 500: Internal server error
 
     Notes:
-        This function acts as an HTTP adapter that:
-        1. Receives the validated HTTP request by FastAPI/Pydantic
-        2. Delegates to the Gateway for complete processing
-        3. Converts Gateway exceptions to HTTPException
-        4. Returns a normalized response
+        This function acts as an HTTP adapter that keeps orchestration and domain logic
+        inside `app.services.orchestrator`.
     """
     try:
-        # Delegate to the API Gateway for complete processing
-        result = gateway.process_chat_message(request)
+        _validate_chat_request(request)
+        result = orchestrator.handle_message(request.history)
         return result
     
+    except ApiKeyError as ake:
+        raise HTTPException(status_code=401, detail=str(ake)) from ake
+
     except GatewayError as ge:
         # Convert GatewayError to HTTPException
-        # The GatewayError already contains status_code and detail appropriate
         raise HTTPException(
             status_code=ge.status_code,
             detail=ge.detail
         ) from ge
     
     except Exception as error:
-        # Capture unexpected errors that were not handled by the Gateway
-        logger.exception("Unexpected error in chat endpoint that was not handled by Gateway")
+        logger.exception("Unexpected error in chat endpoint")
         raise HTTPException(
             status_code=500,
             detail='Unexpected internal error processing the message...'
         ) from error
+
+
+def _validate_chat_request(request: ChatRequest) -> None:
+    """Minimal validation of the chat request (kept from previous adapter behavior)."""
+    if not isinstance(request.history, list):
+        raise GatewayError(status_code=400, detail="The 'history' field must be an array of messages.")
+    if len(request.history) == 0:
+        raise GatewayError(status_code=400, detail="The history cannot be empty. It must contain at least one message.")
+
+    for i, message in enumerate(request.history):
+        if not isinstance(message, dict):
+            raise GatewayError(status_code=400, detail=f"Message {i} is not an object: {type(message)}")
+        if "role" not in message or "content" not in message:
+            raise GatewayError(status_code=400, detail=f"Message {i} must contain 'role' and 'content'.")

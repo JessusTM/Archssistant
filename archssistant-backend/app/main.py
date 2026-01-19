@@ -8,9 +8,8 @@ to maintain clean, maintainable, and scalable code.
 
 Architecture layers:
 - Routes (app/api/routes.py): HTTP endpoints
-- Gateway (app/api/gateway.py): Validation, logging, error handling
-- Orchestrator (app/services/dialogue_orchestrator/): Flow orchestration
-- LLM Service & Recommendation Engine: Specialized services
+- Orchestrator (app/services/orchestrator/): Flow orchestration
+- Elicitation Machine, Decision Maker, Recommendation Explainer: Specialized services
 """
 
 from pathlib import Path

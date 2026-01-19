@@ -27,4 +27,4 @@ where = ["."]
 include = ["app*"]
 
 [tool.setuptools.package-data]
-"app.services.llm_service" = ["prompt/*.txt"]
+"app.services.elicitation_machine" = ["prompt/*.txt"]

@@ -4,7 +4,7 @@ This module contains:
 - `architectures`: list of known architectures with their categorical values per parameter.
 - `VALUE_MAP`: mapping of categorical values to a numeric scale for comparison.
 
-This data is consumed by `recommendation_engine.engine.get_recommendation`.
+This data is consumed by the Decision Maker component.
 """
 
 architectures = [
@@ -87,7 +87,6 @@ architectures = [
     }
 ]
 
-# Mapeo de valores (escala de 1-5) para comparar respuestas del usuario
 VALUE_MAP = {
     'Baja'      : 1,
     'Pequeño'   : 2,

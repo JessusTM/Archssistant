@@ -60,7 +60,7 @@ def log_llm_call(
             output_summary  = 'Parámetro inferido: teamSize=Pequeño'
         )
     """
-    logger = get_logger('llm_service')
+    logger = get_logger('elicitation_machine')
     
     if output_summary:
         logger.info(
@@ -90,7 +90,7 @@ def log_recommendation_event(
             extra_data  = {'parameters_count': 8}
         )
     """
-    logger      = get_logger('recommendation_engine')
+    logger      = get_logger('decision_maker')
     data_str    = f" | Data: {extra_data}" if extra_data else ""
     logger.info(f"[REC] {stage.upper()} - {message}{data_str}")
 
