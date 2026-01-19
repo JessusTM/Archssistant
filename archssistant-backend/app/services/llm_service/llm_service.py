@@ -209,12 +209,13 @@ class LLMService:
             project_description (str): Initial project description from user.
             recommendations (list[dict]): List of recommended architectures (dicts). Each
               dict is expected to have at least the `name` key.
-            history (list[dict]): Conversational history. Currently not used for the
-              prompt, but kept in signature for orchestrator compatibility.
+            history (list[dict]): Conversational history used to provide full context
+              for generating contextualized justifications.
 
         Behavior:
             - Asks LLM to return a JSON whose keys are EXACTLY the names
               of recommended architectures.
+            - Uses complete conversation history to generate contextualized descriptions.
             - On error (API/network/parse), returns default descriptions to not
               interrupt recommendation flow.
 
@@ -232,10 +233,17 @@ class LLMService:
             Prints debug/error logs to stdout.
         """
         recommendations_names = ', '.join([rec['name'] for rec in recommendations])
+        
+        # Prepare conversation history for context
+        conversation_summary = json.dumps([
+            {'role': msg['role'], 'content': msg['content']}
+            for msg in history
+        ], ensure_ascii=False, indent=2)
 
         prompt_template = self.load_prompt('generate_final_descriptions_prompt.txt')
         system_prompt   = prompt_template.format(
             project_description     = project_description,
+            conversation_history    = conversation_summary,
             recommendations_names   = recommendations_names,
             architecture_1_name     = recommendations[0]['name'] if len(recommendations) > 0 else 'Arquitectura 1',
             architecture_2_name     = recommendations[1]['name'] if len(recommendations) > 1 else 'Arquitectura 2',
