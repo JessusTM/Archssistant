@@ -56,8 +56,8 @@ class DialogueOrchestrator:
 
         Notes:
             This method assumes the frontend returns the `state` attached in assistant
-            messages (see `public/script.js`). If the state is lost, the system
-            restarts a new interview.
+            messages (see `archssistant-frontend/script.js`). If the state is lost,
+            the system restarts a new interview.
         """
         last_assistant_message = None
         for msg in reversed(history):

@@ -25,7 +25,7 @@ Documento que describe la arquitectura general del sistema, componentes y patron
                        ↓
 ┌──────────────────────────────────────────────────────────────┐
 │                      FastAPI Server                          │
-│                      (main.py, Port 5000)                    │
+│                   (app/main.py, Port 5000)                   │
 ├──────────────────────────────────────────────────────────────┤
 │ Middleware:                                                   │
 │ - CORS (Allow All Origins)                                   │
@@ -36,7 +36,7 @@ Documento que describe la arquitectura general del sistema, componentes y patron
         ↓              ↓              ↓
 ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
 │ Static Files │ │ API Routes   │ │ API Gateway  │
-│  (public/)   │ │ (/api/chat)  │ │ (Validación) │
+│ (archssistant-frontend/) │ (/api/chat)  │ (Validación) │
 └──────────────┘ └──────┬───────┘ └──────┬───────┘
                         │                │
                         └────────┬───────┘
@@ -64,7 +64,7 @@ Documento que describe la arquitectura general del sistema, componentes y patron
 
 ## Componentes Principales
 
-### 1. Frontend (`public/`)
+### 1. Frontend (`archssistant-frontend/`)
 
 **Responsabilidad:** Interfaz de usuario para interacción conversacional
 
@@ -95,7 +95,7 @@ Calcula progreso (parámetros/5)
 Si es recomendación: muestra TOP 3
 ```
 
-### 2. Servidor FastAPI (`main.py`)
+### 2. Servidor FastAPI (`app/main.py`)
 
 **Responsabilidad:** Punto de entrada y configuración de aplicación
 
@@ -119,8 +119,12 @@ app.add_middleware(CORSMiddleware, allow_origins=['*'])
 # Logging centralizado
 setup_logging(debug_mode=False)
 
-# Montar frontend desde public/
-app.mount('/', StaticFiles(directory='public', html=True))
+# Montar frontend desde archssistant-frontend/
+from pathlib import Path
+
+project_root = Path(__file__).resolve().parents[2]
+frontend_dir = project_root / 'archssistant-frontend'
+app.mount('/', StaticFiles(directory=frontend_dir, html=True))
 ```
 
 ### 3. API Routes (`python_backend/api/routes.py`)
@@ -277,9 +281,9 @@ Retornar TOP 3
 
 ```
 1. Usuario abre http://localhost:5000
-   ├─ Carga public/index.html
-   ├─ Carga public/script.js
-   └─ Carga public/style.css
+   ├─ Carga archssistant-frontend/index.html
+   ├─ Carga archssistant-frontend/script.js
+   └─ Carga archssistant-frontend/style.css
 
 2. Usuario envía primer mensaje: "Quiero una API REST"
    ├─ JavaScript crea historial con role: "user_description"
@@ -443,13 +447,13 @@ Retornar TOP 3
 
 ### Desarrollo Local
 ```bash
-python main.py
+python -m app.main
 # Servidor en http://localhost:5000
 ```
 
 ### Producción (Recomendado)
 ```bash
-gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker
+gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker
 # O usar Docker
 ```
 

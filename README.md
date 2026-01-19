@@ -45,12 +45,12 @@ Aplicación web que proporciona recomendaciones de arquitectura de software medi
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     FRONTEND (Cliente)                       │
-│              public/index.html | style.css | script.js       │
+│    archssistant-frontend/index.html | style.css | script.js  │
 └───────────────────────┬─────────────────────────────────────┘
                         │ HTTP REST
                         ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                  main.py (FastAPI)                           │
+│                  app/main.py (FastAPI)                       │
 │              Punto de entrada del servidor                   │
 └──────────────────────┬──────────────────────────────────────┘
                        │
@@ -93,12 +93,12 @@ Aplicación web que proporciona recomendaciones de arquitectura de software medi
 ```
 Archssistant/
 ├── archssistant-backend/          # Backend Python
-│   ├── main.py                    # Punto de entrada FastAPI
-│   ├── requirements.txt           # Dependencias Python
+│   ├── pyproject.toml             # Dependencias Python
 │   ├── .env                       # Variables de entorno (NO versionar)
 │   ├── .gitignore                 # Archivos ignorados por git
 │   │
 │   └── app/                       # Paquete principal
+│       ├── main.py                # Punto de entrada FastAPI
 │       ├── api/                   # Capa API HTTP
 │       │   ├── __init__.py
 │       │   ├── models.py          # Modelos Pydantic (ChatRequest, ChatResponse)
@@ -129,7 +129,7 @@ Archssistant/
 │               ├── engine.py        # RecommendationEngine
 │               └── architecture_data.py  # Catálogo de arquitecturas
 │
-├── public/                        # Frontend estático
+├── archssistant-frontend/         # Frontend estático
 │   ├── index.html                 # Interfaz HTML
 │   ├── style.css                  # Estilos
 │   └── script.js                  # Lógica del cliente
@@ -203,10 +203,10 @@ source venv/bin/activate
 ### Paso 4: Instalar Dependencias
 
 ```bash
-pip install -r requirements.txt
+pip install .
 ```
 
-**Dependencias principales:**
+**Dependencias principales (pyproject.toml):**
 - `fastapi==0.110.0` - Framework web moderno
 - `uvicorn==0.27.1` - Servidor ASGI
 - `requests==2.32.3` - Cliente HTTP
@@ -302,7 +302,9 @@ cd archssistant-backend
 ### Paso 3: Iniciar el Servidor
 
 ```bash
-python main.py
+python -m app.main
+# o con autoreload explícito:
+uvicorn app.main:app --reload --host 0.0.0.0 --port 5000
 ```
 
 **Salida esperada:**
@@ -316,7 +318,7 @@ python main.py
 2025-01-XX 10:30:45,567 - __main__ - INFO - Initializing API: Archssistant
 2025-01-XX 10:30:45,678 - __main__ - INFO - CORS middleware enabled for all origins
 2025-01-XX 10:30:45,789 - __main__ - INFO - API routers registered
-2025-01-XX 10:30:45,890 - __main__ - INFO - Static files mounted from: .../public
+2025-01-XX 10:30:45,890 - __main__ - INFO - Static files mounted from: .../archssistant-frontend
 2025-01-XX 10:30:45,901 - __main__ - INFO - API Archssistant ready to receive requests
 INFO:     Started server process [12345]
 INFO:     Waiting for application startup.
@@ -515,7 +517,7 @@ Para documentación técnica detallada de cada componente, consulta:
 **Solución:**
 1. Asegúrate de estar en el directorio `archssistant-backend/`
 2. Verifica que el venv está activado
-3. Ejecuta: `pip install -r requirements.txt`
+3. Ejecuta: `pip install .`
 
 ### Error: DEEPSEEK_API_KEY no encontrada
 

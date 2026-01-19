@@ -53,6 +53,7 @@ archssistant-backend/
 │   │   ├── config.py              # Configuración con Config (BaseSettings)
 │   │   ├── logging_config.py      # Configuración central de logging
 │   │   └── logging_utils.py       # Funciones de dominio
+│   ├── main.py                    # Punto de entrada
 │   ├── api/
 │   │   ├── gateway.py             # Usa get_logger()
 │   │   └── routes.py              # Usa get_logger()
@@ -63,8 +64,8 @@ archssistant-backend/
 │       │   └── llm_service.py     # Usa get_logger()
 │       └── recommendation_engine/
 │           └── engine.py          # Usa get_logger()
-├── main.py                         # Punto de entrada
-└── requirements.txt
+├── pyproject.toml
+└── logs/
 
 logs/
 ├── debug.log                       # Todos los logs (solo si LOG_LEVEL=DEBUG)
@@ -89,7 +90,7 @@ LOG_LEVEL=INFO          # DEBUG, INFO, WARNING, ERROR, CRITICAL
 El logging se inicializa automáticamente al importar `app.core.config`:
 
 ```python
-# En main.py
+# En app/main.py
 from app.core import config, get_logger
 
 # El logging ya está configurado automáticamente
