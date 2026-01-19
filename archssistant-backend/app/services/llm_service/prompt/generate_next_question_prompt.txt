@@ -27,6 +27,21 @@ Tu tarea es generar la siguiente interacción con el usuario. Analiza el flag 'i
   <isClarificationNeeded>{is_clarification_needed}</isClarificationNeeded>
 </context>
 
+<parameters_guide>
+  Descripción de los parámetros a inferir:
+  
+  - complexity: Complejidad técnica del proyecto (lógica de negocio, algoritmos, integraciones)
+  - scalability: Necesidad de escalar horizontalmente ante crecimiento de usuarios/carga
+  - teamExperience: Nivel de experiencia técnica del equipo de desarrollo
+  - dataVolume: Volumen de datos a procesar, almacenar o analizar
+  - teamSize: Tamaño del equipo de desarrollo trabajando en el proyecto
+  - availability: Requisito de disponibilidad y tolerancia a fallos del sistema
+  - maintainability: Facilidad requerida para mantener, actualizar y evolucionar el código
+  - interoperability: Necesidad de integrarse con sistemas externos o APIs
+  
+  Usa estas descripciones para formular preguntas más precisas y contextualizar mejor tus confirmaciones.
+</parameters_guide>
+
 <output_format>
   Tu respuesta DEBE SER EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura:
   {{
