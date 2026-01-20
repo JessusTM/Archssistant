@@ -19,6 +19,22 @@ class DecisionMaker:
         self.logger         = get_logger(__name__)
 
     def get_recommendation(self, user_answers: dict[str, str]) -> list[dict[str, Any]]:
+        """Scores candidate architectures and returns the top 3 matches.
+        
+        Evaluates all architectures in the catalog against the user's
+        inferred parameters using a scoring algorithm. Each parameter match
+        contributes points based on how close the architecture's value is
+        to the user's requirement.
+        
+        Args:
+            user_answers: Dictionary mapping parameter names to their inferred values
+            
+        Returns:
+            List of top 3 recommended architectures, each containing:
+                - All original architecture attributes
+                - score: Total match score
+            Sorted by score in descending order
+        """
         self.logger.debug(f"Calculating recommendations for {len(user_answers)} parameters")
         scored_architectures: list[dict[str, Any]] = []
 

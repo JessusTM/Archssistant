@@ -6,10 +6,7 @@ Contains global configurations for:
 - Application constants
 """
 
-# Import configuration (this initializes logging automatically)
 from .config import config, Config
-
-# Import logging utilities
 from .logging_config import setup_logging, get_logger
 from .logging_utils import (
     log_orchestration_event,

@@ -22,7 +22,26 @@ class RecommendationExplainer:
         recommendations     : list[dict[str, Any]],
         history             : list[dict[str, Any]],
     ) -> dict[str, dict[str, str]]:
-        # Formatear el historial de conversación
+        """Generates descriptions and justifications for recommended architectures.
+        
+        Uses an LLM to create personalized descriptions and justifications
+        for each recommended architecture based on the project description
+        and conversation history.
+        
+        Args:
+            project_description : User's project description
+            recommendations     : List of recommended architectures with scores
+            history             : Complete conversation history
+            
+        Returns:
+            Dictionary mapping architecture names to dictionaries containing:
+                - description   : Detailed description of the architecture
+                - justification : Explanation of why it's recommended
+            
+        Note:
+            If LLM call fails, returns default descriptions to allow the
+            recommendation flow to continue.
+        """
         conversation_history = "\n".join([
             f"{msg['role'].upper()}: {msg['content']}" 
             for msg in history

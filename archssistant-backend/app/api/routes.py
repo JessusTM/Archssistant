@@ -53,7 +53,6 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=401, detail=str(ake)) from ake
 
     except GatewayError as ge:
-        # Convert GatewayError to HTTPException
         raise HTTPException(
             status_code=ge.status_code,
             detail=ge.detail

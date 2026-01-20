@@ -19,7 +19,6 @@ from pathlib import Path
 from typing import Optional, Callable
 
 
-# ------ LOGS DIRECTORY ------
 LOGS_DIR = Path(__file__).parent.parent.parent / 'logs'
 LOGS_DIR.mkdir(exist_ok=True)
 
@@ -27,7 +26,6 @@ LOG_FILE_DEBUG  = LOGS_DIR / 'debug.log'
 LOG_FILE_INFO   = LOGS_DIR / 'info.log'
 LOG_FILE_ERROR  = LOGS_DIR / 'error.log'
 
-# ------ FORMAT ------
 DEBUG_FORMAT = (
     '%(asctime)s - %(name)s - %(log_color)s%(levelname)s%(reset)s - '
     '[%(filename)s:%(lineno)d] - %(funcName)s() - %(message)s'
@@ -121,29 +119,23 @@ def setup_logging(log_level: str = 'INFO') -> None:
                   File handlers use fixed levels regardless of this parameter
 
     Example:
-        setup_logging(log_level='DEBUG')  # Development
-        setup_logging(log_level='INFO')   # Production
+        setup_logging(log_level='DEBUG')
+        setup_logging(log_level='INFO')
     """
     
-    # Parse and validate log level
     console_level = _parse_log_level(log_level)
     is_debug_mode = (console_level == logging.DEBUG)
     
-    # Configure root level
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)  # Capture all levels
+    root_logger.setLevel(logging.DEBUG)
     
-    # Clear existing handlers
     root_logger.handlers.clear()
     
-    # Console handler with colors (using colorlog)
     console_handler = logging.StreamHandler()
     console_handler.setLevel(console_level)
     
-    # Choose format based on log level
     console_format = DEBUG_FORMAT if is_debug_mode else PRODUCTION_FORMAT
     
-    # Use colorlog for automatic color detection and TTY safety
     console_formatter = colorlog.ColoredFormatter(
         console_format,
         datefmt='%Y-%m-%d %H:%M:%S'
@@ -151,12 +143,10 @@ def setup_logging(log_level: str = 'INFO') -> None:
     console_handler.setFormatter(console_formatter)
     root_logger.addHandler(console_handler)
     
-    # Debug file handler (all logs) - only in debug mode
     if is_debug_mode:
         debug_handler = _create_file_handler(LOG_FILE_DEBUG, logging.DEBUG)
         root_logger.addHandler(debug_handler)
     
-    # Info file handler (INFO and WARNING)
     info_handler = _create_file_handler(
         LOG_FILE_INFO,
         logging.INFO,
@@ -164,11 +154,9 @@ def setup_logging(log_level: str = 'INFO') -> None:
     )
     root_logger.addHandler(info_handler)
     
-    # Error file handler (ERROR and CRITICAL)
     error_handler = _create_file_handler(LOG_FILE_ERROR, logging.ERROR)
     root_logger.addHandler(error_handler)
     
-    # Initialization log
     logger = logging.getLogger(__name__)
     logger.info("=" * 80)
     logger.info("Logging system initialized")

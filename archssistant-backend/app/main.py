@@ -7,8 +7,8 @@ Business logic and endpoints are organized in separate modules
 to maintain clean, maintainable, and scalable code.
 
 Architecture layers:
-- Routes (app/api/routes.py): HTTP endpoints
-- Orchestrator (app/services/orchestrator/): Flow orchestration
+- Routes (app/api/routes.py)                : HTTP endpoints
+- Orchestrator (app/services/orchestrator/) : Flow orchestration
 - Elicitation Machine, Decision Maker, Recommendation Explainer: Specialized services
 """
 
@@ -31,7 +31,6 @@ app = FastAPI(
 
 logger.info(f"Initializing API: {config.APP_NAME}")
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins       = ['*'],
@@ -41,11 +40,9 @@ app.add_middleware(
 )
 logger.info("CORS middleware enabled for all origins")
 
-# Register routers
 app.include_router(router)
 logger.info("API routers registered")
 
-# Mount static frontend
 project_root = Path(__file__).resolve().parents[2]
 frontend_dir = project_root / 'archssistant-frontend'
 app.mount(
@@ -58,10 +55,13 @@ logger.info(f"API {config.APP_NAME} ready to receive requests")
 
 
 if __name__ == "__main__":
-    """Run the FastAPI server using uvicorn."""
+    """Run the FastAPI server using uvicorn.
+    
+    Starts the development server with auto-reload enabled.
+    """
     uvicorn.run(
         "app.main:app",
-        host=config.HOST,
-        port=config.PORT,
-        reload=True  # Auto-reload on code changes (development)
+        host    = config.HOST,
+        port    = config.PORT,
+        reload  = True
     )
