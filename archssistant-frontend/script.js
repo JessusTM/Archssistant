@@ -1,11 +1,11 @@
 /**
- * Frontend de Arch-Assistant.
+ * Arch-Assistant Frontend.
  *
- * Responsabilidades:
- * - Gestionar el input del usuario y renderizar mensajes en el chat.
- * - Enviar el historial al backend (`POST /api/chat`) y persistir estado local.
- * - Mostrar progreso de inferencia (parámetros inferidos) y recomendaciones finales.
- * - Renderizar un fondo de partículas en canvas.
+ * Responsibilities:
+ * - Manage user input and render chat messages.
+ * - Send history to backend (`POST /api/chat`) and persist local state.
+ * - Display inference progress (inferred parameters) and final recommendations.
+ * - Render particle background on canvas.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -27,14 +27,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const PARAMETER_LABELS = {
-        complexity: 'Complejidad',
-        scalability: 'Escalabilidad',
-        teamExperience: 'Experiencia',
-        dataVolume: 'Volumen de Datos',
-        teamSize: 'Tamaño del Equipo',
-        availability: 'Disponibilidad',
-        maintainability: 'Mantenibilidad',
-        interoperability: 'Interoperabilidad',
+        complexity: 'Complexity',
+        scalability: 'Scalability',
+        teamExperience: 'Experience',
+        dataVolume: 'Data Volume',
+        teamSize: 'Team Size',
+        availability: 'Availability',
+        maintainability: 'Maintainability',
+        interoperability: 'Interoperability',
     };
 
     elements.chatForm.addEventListener('submit', async (e) => {
@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!res.ok) {
-                let msg = 'Error de comunicación con el servidor.';
+                let msg = 'Server communication error.';
                 try { 
                     const j = await res.json(); 
                     if (j?.detail) msg = j.detail; 
@@ -87,21 +87,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typingIndicator?.parentNode) {
                 elements.chatContainer.removeChild(typingIndicator);
             }
-            appendMessage('assistant', '<p>Error del sistema. No se pudo procesar la solicitud. Por favor, reintenta.</p>');
+            appendMessage('assistant', '<p>System error. Unable to process request. Please try again.</p>');
         } finally {
             toggleForm(true);
         }
     });
 
     /**
-     * Agrega un mensaje al contenedor de chat.
+     * Adds a message to the chat container.
      *
-     * @param {'user'|'assistant'} sender - Quién envía el mensaje.
-     * @param {string} htmlContent - Contenido HTML ya preparado para insertar.
-     *   Importante: si contiene texto proveniente del usuario, debe venir escapado
-     *   con `escapeHtml` para evitar inyección de HTML.
+     * @param {'user'|'assistant'} sender - Who is sending the message.
+     * @param {string} htmlContent - HTML content ready to insert.
+     *   Important: if it contains text from the user, it must be escaped
+     *   with `escapeHtml` to prevent HTML injection.
      *
-     * @returns {HTMLDivElement} El wrapper DOM del mensaje insertado.
+     * @returns {HTMLDivElement} The DOM wrapper of the inserted message.
      */
     function appendMessage(sender, htmlContent) {
         const messageWrapper = document.createElement('div');
@@ -143,10 +143,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     /**
-     * Muestra un indicador de “escribiendo…” del asistente.
+     * Shows an assistant "typing..." indicator.
      *
-     * @returns {HTMLDivElement} Nodo DOM del mensaje que contiene el indicador.
-     *   Se usa para removerlo cuando el backend responde.
+     * @returns {HTMLDivElement} DOM node of the message containing the indicator.
+     *   Used to remove it when the backend responds.
      */
     function appendTypingIndicator() {
         const html = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
@@ -154,21 +154,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Genera el HTML para renderizar las recomendaciones finales.
+     * Generates HTML to render final recommendations.
      *
-     * @param {Array<Object>} recommendations - Lista de recomendaciones del backend.
-     *   Se espera que cada elemento tenga al menos:
+     * @param {Array<Object>} recommendations - List of recommendations from backend.
+     *   Each element is expected to have at least:
      *   - `name` (string)
-     *   - `description` (string, opcional)
-     *   - `justification` (string, opcional)
-     *   - y los parámetros técnicos (complexity, scalability, etc.).
+     *   - `description` (string, optional)
+     *   - `justification` (string, optional)
+     *   - and technical parameters (complexity, scalability, etc.).
      *
-     * @returns {string} Fragmento HTML listo para insertar en un mensaje.
+     * @returns {string} HTML fragment ready to insert in a message.
      */
     function generateRecommendationHtml(recommendations) {
         markInferenceComplete();
         
-        let html = '<p class="highlight-text"><strong>⚡ Análisis Completado.</strong></p><p>Basándose en los parámetros inferidos, se recomiendan las siguientes arquitecturas:</p>';
+        let html = '<p class="highlight-text"><strong>⚡ Analysis Complete.</strong></p><p>Based on the inferred parameters, the following architectures are recommended:</p>';
         
         recommendations.forEach((rec, index) => {
             const isPrimary = index === 0;
@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
                      <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
                    </svg>`;
             
-            const titleText = isPrimary ? `⭐ Recomendación Principal: ${rec.name}` : `Alternativa: ${rec.name}`;
+            const titleText = isPrimary ? `⭐ Primary Recommendation: ${rec.name}` : `Alternative: ${rec.name}`;
 
             html += `
                 <div class="recommendation-card ${cardClass}">
@@ -191,24 +191,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="rec-body">
                         <div class="rec-section">
-                            <h5>💡 Concepto</h5>
+                            <h5>💡 Concept</h5>
                             <p>${escapeHtml(rec.description || 'N/A')}</p>
                         </div>
                         <div class="rec-section">
-                            <h5>🎯 Justificación</h5>
+                            <h5>🎯 Justification</h5>
                             <p>${escapeHtml(rec.justification || 'N/A')}</p>
                         </div>
                         <details>
-                            <summary>📊 Ver Especificaciones Técnicas</summary>
+                            <summary>📊 View Technical Specifications</summary>
                             <ul class="tech-specs">
-                                <li><strong>Complejidad</strong> ${escapeHtml(rec.complexity)}</li>
-                                <li><strong>Escalabilidad</strong> ${escapeHtml(rec.scalability)}</li>
-                                <li><strong>Experiencia</strong> ${escapeHtml(rec.teamExperience)}</li>
-                                <li><strong>Volumen de Datos</strong> ${escapeHtml(rec.dataVolume)}</li>
-                                <li><strong>Tamaño del Equipo</strong> ${escapeHtml(rec.teamSize)}</li>
-                                <li><strong>Disponibilidad</strong> ${escapeHtml(rec.availability)}</li>
-                                <li><strong>Mantenibilidad</strong> ${escapeHtml(rec.maintainability)}</li>
-                                <li><strong>Interoperabilidad</strong> ${escapeHtml(rec.interoperability)}</li>
+                                <li><strong>Complexity</strong> ${escapeHtml(rec.complexity)}</li>
+                                <li><strong>Scalability</strong> ${escapeHtml(rec.scalability)}</li>
+                                <li><strong>Experience</strong> ${escapeHtml(rec.teamExperience)}</li>
+                                <li><strong>Data Volume</strong> ${escapeHtml(rec.dataVolume)}</li>
+                                <li><strong>Team Size</strong> ${escapeHtml(rec.teamSize)}</li>
+                                <li><strong>Availability</strong> ${escapeHtml(rec.availability)}</li>
+                                <li><strong>Maintainability</strong> ${escapeHtml(rec.maintainability)}</li>
+                                <li><strong>Interoperability</strong> ${escapeHtml(rec.interoperability)}</li>
                             </ul>
                         </details>
                     </div>
@@ -219,10 +219,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Habilita o deshabilita el formulario de chat.
+     * Enables or disables the chat form.
      *
-     * @param {boolean} enabled - Si `true`, habilita input y botón y enfoca el input.
-     *   Si `false`, los deshabilita para prevenir envíos duplicados.
+     * @param {boolean} enabled - If `true`, enables input and button and focuses input.
+     *   If `false`, disables them to prevent duplicate submissions.
      */
     function toggleForm(enabled) {
         elements.chatInput.disabled = !enabled;
@@ -231,12 +231,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Actualiza el panel de progreso de inferencia en base al `state` del backend.
+     * Updates the inference progress panel based on backend `state`.
      *
-     * @param {Object} [state] - Estado enviado por el backend.
-     * @param {Object<string,string>} [state.inferredParams] - Parámetros inferidos.
-     * @param {Object} [state.lastQuestion] - Última pregunta generada.
-     * @param {string} [state.lastQuestion.parameter_to_infer] - Parámetro actualmente activo.
+     * @param {Object} [state] - State sent by the backend.
+     * @param {Object<string,string>} [state.inferredParams] - Inferred parameters.
+     * @param {Object} [state.lastQuestion] - Last generated question.
+     * @param {string} [state.lastQuestion.parameter_to_infer] - Currently active parameter.
      *
      * @returns {void}
      */
@@ -277,9 +277,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Actualiza el anillo circular de progreso usando stroke-dashoffset.
+     * Updates the circular progress ring using stroke-dashoffset.
      *
-     * @param {number} percent - Porcentaje 0..100.
+     * @param {number} percent - Percentage 0..100.
      * @returns {void}
      */
     function setCircleProgress(percent) {
@@ -290,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     /**
-     * Marca visualmente el proceso de inferencia como completado.
+     * Visually marks the inference process as completed.
      *
      * @returns {void}
      */
@@ -299,21 +299,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     /**
-     * Escapa caracteres especiales para evitar inyección de HTML.
+     * Escapes special characters to prevent HTML injection.
      *
-     * @param {*} str - Valor a escapar. Si no es string, se retorna tal cual.
-     * @returns {*} Si `str` es string, retorna string escapado. En otro caso, retorna `str`.
+     * @param {*} str - Value to escape. If not a string, returns as is.
+     * @returns {*} If `str` is a string, returns escaped string. Otherwise, returns `str`.
      */
     const escapeHtml = (str) => typeof str === 'string' 
         ? str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))
         : str;
     
     /**
-     * Muestra un banner de estado temporal.
+     * Shows a temporary status banner.
      *
-     * @param {'error'|'info'|'success'|string} type - Tipo lógico. Actualmente no cambia estilos,
-     *   pero se conserva para extensibilidad.
-     * @param {string} message - Mensaje (HTML permitido). Si viene de entrada usuario, debe escaparse.
+     * @param {'error'|'info'|'success'|string} type - Logical type. Currently doesn't change styles,
+     *   but kept for extensibility.
+     * @param {string} message - Message (HTML allowed). If from user input, must be escaped.
      * @returns {void}
      */
     function showStatus(type, message) {
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     /**
-     * Limpia y oculta el banner de estado.
+     * Clears and hides the status banner.
      *
      * @returns {void}
      */
@@ -337,9 +337,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Inicializa el fondo de partículas en un `<canvas>`.
+ * Initializes the particle background on a `<canvas>`.
  *
- * Busca un elemento con id `particle-canvas`. Si no existe, no hace nada.
+ * Looks for an element with id `particle-canvas`. If it doesn't exist, does nothing.
  *
  * @returns {void}
  */
@@ -350,7 +350,7 @@ function initParticleBackground() {
     const ctx = canvas.getContext('2d');
     
     /**
-     * Ajusta el tamaño del canvas al viewport actual.
+     * Adjusts canvas size to current viewport.
      *
      * @returns {void}
      */
@@ -369,7 +369,7 @@ function initParticleBackground() {
         }
         
         /**
-         * Reinicia la partícula a una posición inicial (arriba del canvas).
+         * Resets the particle to initial position (top of canvas).
          *
          * @returns {void}
          */
@@ -382,8 +382,8 @@ function initParticleBackground() {
         }
         
         /**
-         * Actualiza la posición de la partícula en el tiempo.
-         * Si sale del canvas por abajo, se reinicia.
+         * Updates the particle position over time.
+         * If it exits the canvas from below, it resets.
          *
          * @returns {void}
          */
@@ -395,7 +395,7 @@ function initParticleBackground() {
         }
         
         /**
-         * Dibuja la partícula en el contexto 2D.
+         * Draws the particle on the 2D context.
          *
          * @returns {void}
          */
@@ -418,7 +418,7 @@ function initParticleBackground() {
     }
     
     /**
-     * Dibuja líneas de conexión entre partículas cercanas.
+     * Draws connection lines between nearby particles.
      *
      * @returns {void}
      */
@@ -442,10 +442,10 @@ function initParticleBackground() {
     }
     
     /**
-     * Loop de animación principal.
+     * Main animation loop.
      *
-     * Limpia el canvas, actualiza y dibuja partículas, luego dibuja conexiones.
-     * Se auto-programa con `requestAnimationFrame`.
+     * Clears the canvas, updates and draws particles, then draws connections.
+     * Self-schedules with `requestAnimationFrame`.
      *
      * @returns {void}
      */
