@@ -54,7 +54,7 @@ class RecommendationExplainer:
             default_descriptions: dict[str, dict[str, str]] = {}
             for rec in recommendations:
                 default_descriptions[rec["name"]] = {
-                    "description"   : f"Arquitectura {rec['name']} - Sistema de desarrollo modular.",
-                    "justification" : "Esta arquitectura es adecuada para tu proyecto según los parámetros analizados.",
+                    "description"   : f"{rec['name']} Architecture - Modular development system.",
+                    "justification" : "This architecture is suitable for your project based on the analyzed parameters.",
                 }
             return default_descriptions

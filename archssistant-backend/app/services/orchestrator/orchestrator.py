@@ -183,7 +183,7 @@ class Orchestrator:
         if not recommendations:
             empty_response = {
                 "role"      : "assistant",
-                "content"   : "No he podido determinar una recomendación con los datos proporcionados.",
+                "content"   : "I couldn't determine a recommendation with the provided data.",
             }
             state["status"] = "finished"
             result = {"response": empty_response, "state": state}
@@ -202,7 +202,7 @@ class Orchestrator:
         enriched_recommendations = self._enrich_recommendations(recommendations, descriptions)
         response = {
             "role"          : "assistant",
-            "content"       : "¡Gracias! He analizado tus respuestas.",
+            "content"       : "Thank you! I have analyzed your responses.",
             "recommendation": enriched_recommendations,
         }
         state["status"] = "finished"
@@ -232,8 +232,8 @@ class Orchestrator:
             enriched_list.append(
                 {
                     **rec,
-                    "description": desc_data.get("description", "Descripción no disponible."),
-                    "justification": desc_data.get("justification", "Justificación no disponible."),
+                    "description": desc_data.get("description", "Description not available."),
+                    "justification": desc_data.get("justification", "Justification not available."),
                 }
             )
         return enriched_list
@@ -241,6 +241,6 @@ class Orchestrator:
     def _build_final_response(self) -> dict[str, str]:
         final_message = {
             "role"      : "assistant",
-            "content"   : "Si tienes otro proyecto que analizar, simplemente recarga la página.",
+            "content"   : "If you have another project to analyze, simply reload the page.",
         }
         return final_message

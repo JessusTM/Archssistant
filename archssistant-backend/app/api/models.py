@@ -30,11 +30,11 @@ class ChatRequest(BaseModel):
                 "history": [
                     {
                         "role": "user", 
-                        "content": "Hola, necesito ayuda con mi proyecto"
+                        "content": "Hello, I need help with my project"
                     },
                     {
                         "role": "assistant", 
-                        "content": "¡Hola! Estoy aquí para ayudarte..."
+                        "content": "Hello! I'm here to help you..."
                     }
                 ]
             }
@@ -43,7 +43,7 @@ class ChatRequest(BaseModel):
 
     history: List[Dict[str, Any]] = Field(
         ..., # Required Field
-        description = "Historial completo de la conversación en orden cronológico",
+        description = "Complete conversation history in chronological order",
         min_length  = 0
     )
 
@@ -63,7 +63,7 @@ class ChatResponse(BaseModel):
             "example": {
                 "response": {
                     "role"      : "assistant",
-                    "content"   : "¿Cuál es el tipo de proyecto que estás desarrollando?"
+                    "content"   : "What type of project are you developing?"
                 },
                 "state": {
                     "inferredParams": {},
@@ -75,9 +75,9 @@ class ChatResponse(BaseModel):
 
     response: Dict[str, Any] = Field(
         ..., # Required Field
-        description = "Respuesta del asistente con role, content y datos adicionales"
+        description = "Assistant response with role, content and additional data"
     )
     state: Dict[str, Any] = Field(
         ..., # Required Field
-        description = "Estado de la conversación con inferredParams y status"
+        description = "Conversation state with inferredParams and status"
     )
