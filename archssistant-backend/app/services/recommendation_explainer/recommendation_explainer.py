@@ -22,7 +22,11 @@ class RecommendationExplainer:
         recommendations     : list[dict[str, Any]],
         history             : list[dict[str, Any]],
     ) -> dict[str, dict[str, str]]:
-        _ = history
+        # Formatear el historial de conversación
+        conversation_history = "\n".join([
+            f"{msg['role'].upper()}: {msg['content']}" 
+            for msg in history
+        ])
 
         recommendation_names_list: list[str] = []
         for recommendation in recommendations:
@@ -32,6 +36,7 @@ class RecommendationExplainer:
         prompt_template = self.llm_client.load_prompt("generate_final_descriptions_prompt.txt")
         system_prompt   = prompt_template.format(
             project_description     = project_description,
+            conversation_history    = conversation_history,
             recommendations_names   = recommendations_names,
             architecture_1_name     = recommendations[0]["name"] if len(recommendations) > 0 else "Arquitectura 1",
             architecture_2_name     = recommendations[1]["name"] if len(recommendations) > 1 else "Arquitectura 2",

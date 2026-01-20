@@ -18,13 +18,3 @@ dependencies = [
     "colorlog==6.8.0",
 ]
 
-[tool.setuptools]
-include-package-data = true
-packages = { find = {} }
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["app*"]
-
-[tool.setuptools.package-data]
-"app.services.elicitation_machine" = ["prompt/*.txt"]
