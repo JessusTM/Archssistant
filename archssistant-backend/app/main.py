@@ -8,12 +8,11 @@ to maintain clean, maintainable, and scalable code.
 
 Architecture layers:
 - Routes (app/api/routes.py): HTTP endpoints
-- Gateway (app/api/gateway.py): Validation, logging, error handling
-- Orchestrator (app/services/dialogue_orchestrator/): Flow orchestration
-- LLM Service & Recommendation Engine: Specialized services
+- Orchestrator (app/services/orchestrator/): Flow orchestration
+- Elicitation Machine, Decision Maker, Recommendation Explainer: Specialized services
 """
 
-import os
+from pathlib import Path
 import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -42,23 +41,26 @@ app.add_middleware(
 )
 logger.info("CORS middleware enabled for all origins")
 
+# Register routers
 app.include_router(router)
 logger.info("API routers registered")
 
-public_dir = os.path.join(os.path.dirname(__file__), '..', 'public')
+# Mount static frontend
+project_root = Path(__file__).resolve().parents[2]
+frontend_dir = project_root / 'archssistant-frontend'
 app.mount(
     '/',
-    StaticFiles(directory=public_dir, html=True),
+    StaticFiles(directory=frontend_dir, html=True),
     name='static'
 )
-logger.info(f"Static files mounted from: {public_dir}")
+logger.info(f"Static files mounted from: {frontend_dir}")
 logger.info(f"API {config.APP_NAME} ready to receive requests")
 
 
 if __name__ == "__main__":
     """Run the FastAPI server using uvicorn."""
     uvicorn.run(
-        "main:app",
+        "app.main:app",
         host=config.HOST,
         port=config.PORT,
         reload=True  # Auto-reload on code changes (development)

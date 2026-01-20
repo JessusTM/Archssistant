@@ -1,7 +1,9 @@
-"""Business logic services package for Arch-Assistant.
+"""Business logic services package for Archssistant.
 
-This package contains the core business logic services:
-- Dialogue Orchestrator: conversational flow management
-- LLM Service: integration with DeepSeek API
-- Recommendation Engine: architecture recommendation scoring
+This package contains the core business logic components aligned with the architecture diagram:
+- Orchestrator
+- Elicitation Machine
+- Symbolic Knowledge Base
+- Decision Maker
+- Recommendation Explainer
 """
