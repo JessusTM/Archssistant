@@ -11,7 +11,6 @@ from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
 
 from .models import ChatRequest, ChatResponse
-from .exceptions import GatewayError, ApiKeyError
 from ..services.orchestrator import Orchestrator
 
 router = APIRouter(prefix="/api", tags=["chat"])
@@ -49,11 +48,11 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
         result = orchestrator.handle_message(request.history)
         return result
 
-    except ApiKeyError as ake:
-        raise HTTPException(status_code=401, detail=str(ake)) from ake
+    except PermissionError as pe:
+        raise HTTPException(status_code=401, detail=str(pe)) from pe
 
-    except GatewayError as ge:
-        raise HTTPException(status_code=ge.status_code, detail=ge.detail) from ge
+    except HTTPException:
+        raise
 
     except Exception as error:
         logger.exception("Unexpected error in chat endpoint")
@@ -66,22 +65,22 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
 def _validate_chat_request(request: ChatRequest) -> None:
     """Minimal validation of the chat request (kept from previous adapter behavior)."""
     if not isinstance(request.history, list):
-        raise GatewayError(
+        raise HTTPException(
             status_code=400, detail="The 'history' field must be an array of messages."
         )
     if len(request.history) == 0:
-        raise GatewayError(
+        raise HTTPException(
             status_code=400,
             detail="The history cannot be empty. It must contain at least one message.",
         )
 
     for i, message in enumerate(request.history):
         if not isinstance(message, dict):
-            raise GatewayError(
+            raise HTTPException(
                 status_code=400, detail=f"Message {i} is not an object: {type(message)}"
             )
         if "role" not in message or "content" not in message:
-            raise GatewayError(
+            raise HTTPException(
                 status_code=400,
                 detail=f"Message {i} must contain 'role' and 'content'.",
             )

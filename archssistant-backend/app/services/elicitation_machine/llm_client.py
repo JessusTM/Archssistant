@@ -13,7 +13,6 @@ import os
 from pathlib import Path
 from typing import Any, Optional
 import requests
-from app.api.exceptions import ApiKeyError
 
 
 logger = logging.getLogger(__name__)
@@ -57,7 +56,7 @@ class DeepSeekLLMClient:
             Parsed JSON object from the API response
 
         Raises:
-            ApiKeyError         : If API key is missing or invalid
+            PermissionError     : If API key is missing or invalid
             json.JSONDecodeError: If response is not valid JSON
             Exception           : For other API or network errors
         """
@@ -69,7 +68,7 @@ class DeepSeekLLMClient:
             raw_content = self._extract_raw_content(response)
             parsed_json = self._parse_json_content(raw_content)
             return parsed_json
-        except ApiKeyError:
+        except PermissionError:
             raise
         except json.JSONDecodeError as json_error:
             logger.error(
@@ -87,12 +86,14 @@ class DeepSeekLLMClient:
             Validated API key string
 
         Raises:
-            ApiKeyError: If API key is missing or appears to be a placeholder
+            PermissionError: If API key is missing or appears to be a placeholder
         """
         api_key = os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
             logger.error("DEEPSEEK_API_KEY not found in environment variables")
-            raise ApiKeyError("La clave de API no está configurada (DEEPSEEK_API_KEY).")
+            raise PermissionError(
+                "La clave de API no está configurada (DEEPSEEK_API_KEY)."
+            )
 
         placeholder = api_key.strip().lower()
         invalid_placeholders = {
@@ -105,7 +106,7 @@ class DeepSeekLLMClient:
             "tu_clave_api_aqui"
         ):
             logger.error("DEEPSEEK_API_KEY appears to be a placeholder value")
-            raise ApiKeyError(
+            raise PermissionError(
                 "La clave de API parece ser un placeholder. Configura DEEPSEEK_API_KEY en .env con tu clave real."
             )
         return api_key
@@ -141,7 +142,7 @@ class DeepSeekLLMClient:
             Response object from requests library
 
         Raises:
-            ApiKeyError : If authentication fails (401)
+            PermissionError : If authentication fails (401)
             Exception   : For other HTTP errors
         """
         response = requests.post(
@@ -155,7 +156,7 @@ class DeepSeekLLMClient:
         if not response.ok:
             if response.status_code == 401:
                 logger.error("DeepSeek API authentication failed (401)")
-                raise ApiKeyError(
+                raise PermissionError(
                     "Autenticación fallida con DeepSeek. Revisa tu DEEPSEEK_API_KEY."
                 )
             logger.error(
