@@ -22,8 +22,6 @@ class ChatRequest(BaseModel):
             is validated tolerantly in the orchestrator.
     """
     
-    # model_config      : Configures Pydantic model behavior at the class level.
-    # json_schema_extra : Adds extra information to the JSON schema generated for this model,
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -42,7 +40,7 @@ class ChatRequest(BaseModel):
     )
 
     history: List[Dict[str, Any]] = Field(
-        ..., # Required Field
+        ...,
         description = "Complete conversation history in chronological order",
         min_length  = 0
     )
@@ -56,8 +54,6 @@ class ChatResponse(BaseModel):
         state: Current conversation state with inferred parameters and status.
     """
     
-    # model_config      : Configures Pydantic model behavior at the class level.
-    # json_schema_extra : Adds extra information to the JSON schema generated for this model,
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -74,10 +70,10 @@ class ChatResponse(BaseModel):
     )
 
     response: Dict[str, Any] = Field(
-        ..., # Required Field
+        ...,
         description = "Assistant response with role, content and additional data"
     )
     state: Dict[str, Any] = Field(
-        ..., # Required Field
+        ...,
         description = "Conversation state with inferredParams and status"
     )

@@ -1,158 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arch-Assistant | Software Architecture Assistant</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arch-ssistant | Software Architecture Assistant</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+    rel="stylesheet">
 </head>
+
 <body>
-    <!-- Animated Background Layer -->
-    <div class="app-background">
-        <div class="bg-gradient-orb orb-1"></div>
-        <div class="bg-gradient-orb orb-2"></div>
-        <div class="bg-gradient-orb orb-3"></div>
-        <canvas id="particle-canvas"></canvas>
-    </div>
-    
-    <div class="layout-grid">
-        <!-- Sidebar: Neural Intelligence Dashboard -->
-        <aside class="sidebar-panel glass-panel">
+  <!-- Animated Background Layer -->
+  <div class="app-background">
+    <div class="bg-gradient-orb orb-1"></div>
+    <div class="bg-gradient-orb orb-2"></div>
+    <div class="bg-gradient-orb orb-3"></div>
+    <canvas id="particle-canvas"></canvas>
+  </div>
+
+  <div class="layout-grid">
+    <!-- Sidebar: Neural Intelligence Dashboard -->
+    <aside class="sidebar-panel glass-panel">
+      <div class="glass-shine"></div>
+
+      <header class="brand-header">
+        <div class="logo-icon">
+          <div class="logo-glow"></div>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+          </svg>
+        </div>
+        <div class="brand-info">
+          <h1><span class="brand-gradient">ARCHSSISTANT</h1>
+          <span class="status-badge">
+            <span class="status-dot pulse-animation"></span>
+            <span class="status-text">SYSTEM ACTIVE</span>
+          </span>
+        </div>
+      </header>
+
+      <div class="inference-engine" id="progress-sidebar">
+        <div class="engine-header">
+          <h2>
+            <svg class="inline-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M12 1v6m0 6v6m10.71-8.29l-5.66 5.66M6.95 6.95L1.29 1.29m20.42 0l-5.66 5.66M6.95 17.05l-5.66 5.66" />
+            </svg>
+            INFERENCE ENGINE
+          </h2>
+          <div class="pulse-indicator" id="pulse-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="progress-circle-container">
+          <div class="progress-glow"></div>
+          <svg class="progress-ring" width="140" height="140" viewBox="0 0 140 140">
+            <defs>
+              <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#00F5FF;stop-opacity:1" />
+                <stop offset="50%" style="stop-color:#00D4FF;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#7B2FFF;stop-opacity:1" />
+              </linearGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                <feMerge>
+                  <feMergeNode in="coloredBlur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.1)" stroke-width="8" fill="transparent"
+              r="60" cx="70" cy="70" />
+            <circle class="progress-ring__circle" stroke="url(#progressGradient)" stroke-width="8" fill="transparent"
+              r="60" cx="70" cy="70" filter="url(#glow)" stroke-linecap="round" />
+          </svg>
+          <div class="progress-text">
+            <span id="progress-counter" class="counter-glow">0/5</span>
+            <span class="label">PARAMETERS</span>
+          </div>
+        </div>
+
+        <div class="parameters-container">
+          <h3>
+            <svg class="inline-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+            DETECTED CONTEXT
+          </h3>
+          <ul id="parameter-list" class="parameter-list">
+            <!-- Items injected by JS -->
+          </ul>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main: Neural Conversation Interface -->
+    <main class="chat-interface">
+      <div class="glass-overlay"></div>
+
+      <div id="status-banner" class="status-banner glass-panel" role="alert" hidden>
+        <div class="glass-shine"></div>
+      </div>
+
+      <div id="chat-container" class="chat-scroll-area">
+        <!-- Welcome Message -->
+        <div class="chat-message assistant welcome-message">
+          <div class="avatar glass-avatar">
+            <div class="avatar-glow"></div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M12 1v6m0 6v6m10.71-8.29l-5.66 5.66M6.95 6.95L1.29 1.29m20.42 0l-5.66 5.66M6.95 17.05l-5.66 5.66" />
+            </svg>
+          </div>
+          <div class="message-content glass-message">
             <div class="glass-shine"></div>
-            
-            <header class="brand-header">
-                <div class="logo-icon">
-                    <div class="logo-glow"></div>
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                    </svg>
-                </div>
-                <div class="brand-info">
-                    <h1><span class="brand-gradient">ARCHSSISTANT</h1>
-                    <span class="status-badge">
-                        <span class="status-dot pulse-animation"></span>
-                        <span class="status-text">SYSTEM ACTIVE</span>
-                    </span>
-                </div>
-            </header>
+            <p class="welcome-title">⚡ SYSTEM INITIALIZED</p>
+            <p>I'm your <span class="highlight-text">AI Software Architecture Assistant</span>. I'm here to help you
+              design the best architecture for your project.</p>
+            <p class="prompt-text">
+              <svg class="inline-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <polyline points="9 11 12 14 22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
+              Please describe your project and its requirements.
+            </p>
+          </div>
+        </div>
+      </div>
 
-            <div class="inference-engine" id="progress-sidebar">
-                <div class="engine-header">
-                    <h2>
-                        <svg class="inline-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m10.71-8.29l-5.66 5.66M6.95 6.95L1.29 1.29m20.42 0l-5.66 5.66M6.95 17.05l-5.66 5.66"/>
-                        </svg>
-                        INFERENCE ENGINE
-                    </h2>
-                    <div class="pulse-indicator" id="pulse-indicator">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                </div>
-                
-                <div class="progress-circle-container">
-                    <div class="progress-glow"></div>
-                    <svg class="progress-ring" width="140" height="140" viewBox="0 0 140 140">
-                        <defs>
-                            <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#00F5FF;stop-opacity:1" />
-                                <stop offset="50%" style="stop-color:#00D4FF;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#7B2FFF;stop-opacity:1" />
-                            </linearGradient>
-                            <filter id="glow">
-                                <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                                <feMerge>
-                                    <feMergeNode in="coloredBlur"/>
-                                    <feMergeNode in="SourceGraphic"/>
-                                </feMerge>
-                            </filter>
-                        </defs>
-                        <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.1)" stroke-width="8" fill="transparent" r="60" cx="70" cy="70"/>
-                        <circle class="progress-ring__circle" stroke="url(#progressGradient)" stroke-width="8" fill="transparent" r="60" cx="70" cy="70" filter="url(#glow)" stroke-linecap="round"/>
-                    </svg>
-                    <div class="progress-text">
-                        <span id="progress-counter" class="counter-glow">0/5</span>
-                        <span class="label">PARAMETERS</span>
-                    </div>
-                </div>
+      <div class="input-area">
+        <div class="input-glow-effect"></div>
+        <form id="chat-form" class="input-wrapper glass-panel">
+          <div class="glass-shine"></div>
+          <div class="input-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+          </div>
+          <input type="text" id="chat-input" placeholder="Describe your system requirements..." autocomplete="off"
+            required>
+          <button type="submit" id="send-btn" class="send-btn-glass" aria-label="Send">
+            <div class="button-glow"></div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </form>
+        <div class="input-hint glass-hint">
+          <svg class="inline-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          </svg>
+          System designed by <strong>J. Tapia</strong> and <strong>Z. Xiao</strong>
+        </div>
+      </div>
+    </main>
+  </div>
 
-                <div class="parameters-container">
-                    <h3>
-                        <svg class="inline-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                        </svg>
-                        DETECTED CONTEXT
-                    </h3>
-                    <ul id="parameter-list" class="parameter-list">
-                        <!-- Items injected by JS -->
-                    </ul>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Main: Neural Conversation Interface -->
-        <main class="chat-interface">
-            <div class="glass-overlay"></div>
-            
-            <div id="status-banner" class="status-banner glass-panel" role="alert" hidden>
-                <div class="glass-shine"></div>
-            </div>
-            
-            <div id="chat-container" class="chat-scroll-area">
-                <!-- Welcome Message -->
-                <div class="chat-message assistant welcome-message">
-                    <div class="avatar glass-avatar">
-                        <div class="avatar-glow"></div>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m10.71-8.29l-5.66 5.66M6.95 6.95L1.29 1.29m20.42 0l-5.66 5.66M6.95 17.05l-5.66 5.66"/>
-                        </svg>
-                    </div>
-                    <div class="message-content glass-message">
-                        <div class="glass-shine"></div>
-                        <p class="welcome-title">⚡ SYSTEM INITIALIZED</p>
-                        <p>I'm your <span class="highlight-text">AI Software Architecture Assistant</span>. I'm here to help you design the best architecture for your project.</p>
-                        <p class="prompt-text">
-                            <svg class="inline-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                            </svg>
-                            Please describe your project and its requirements.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="input-area">
-                <div class="input-glow-effect"></div>
-                <form id="chat-form" class="input-wrapper glass-panel">
-                    <div class="glass-shine"></div>
-                    <div class="input-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                        </svg>
-                    </div>
-                    <input type="text" id="chat-input" placeholder="Describe your system requirements..." autocomplete="off" required>
-                    <button type="submit" id="send-btn" class="send-btn-glass" aria-label="Send">
-                        <div class="button-glow"></div>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <line x1="22" y1="2" x2="11" y2="13"></line>
-                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                        </svg>
-                    </button>
-                </form>
-                <div class="input-hint glass-hint">
-                    <svg class="inline-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                    System designed by <strong>J. Tapia</strong> and <strong>Z. Xiao</strong>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
+
 </html>
