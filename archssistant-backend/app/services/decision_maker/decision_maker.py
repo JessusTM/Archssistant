@@ -4,8 +4,6 @@ Implements deterministic evaluation rules over symbolic knowledge to produce
 a ranked list of recommended architectures.
 """
 
-from __future__ import annotations
-
 import logging
 from typing import Any
 from app.services.symbolic_knowledge_base import VALUE_MAP, architectures

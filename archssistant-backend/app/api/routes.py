@@ -6,20 +6,48 @@ HTTP adapter layer:
 - Translates domain exceptions into HTTP status codes
 """
 
-import logging
-from fastapi import APIRouter, HTTPException
-from typing import Dict, Any
+import os
+from typing import Annotated
 
-from .models import ChatRequest, ChatResponse
-from ..services.orchestrator import Orchestrator
+from fastapi import APIRouter, Depends
+
+from app.api.schemas import ChatRequest, ChatResponse
+from app.services.orchestrator import Orchestrator
+
 
 router = APIRouter(prefix="/api", tags=["chat"])
-orchestrator = Orchestrator()
-logger = logging.getLogger(__name__)
+
+
+def get_orchestrator() -> Orchestrator:
+    return Orchestrator()
+
+
+def require_deepseek_key() -> None:
+    api_key = os.getenv("DEEPSEEK_API_KEY")
+    if not api_key:
+        raise PermissionError("La clave de API no está configurada (DEEPSEEK_API_KEY).")
+
+    placeholder = api_key.strip().lower()
+    invalid_placeholders = {
+        "",
+        "your_deepseek_api_key_here",
+        "sk-replace_me",
+        "tu_clave_api_aqui",
+    }
+    if placeholder in invalid_placeholders or placeholder.startswith(
+        "tu_clave_api_aqui"
+    ):
+        raise PermissionError(
+            "La clave de API parece ser un placeholder. Configura DEEPSEEK_API_KEY en .env con tu clave real."
+        )
 
 
 @router.post("/chat", response_model=ChatResponse)
-def chat(request: ChatRequest) -> Dict[str, Any]:
+def chat(
+    _: Annotated[None, Depends(require_deepseek_key)],
+    request: ChatRequest,
+    orchestrator: Annotated[Orchestrator, Depends(get_orchestrator)],
+) -> dict:
     """
     Entry point for chat requests.
 
@@ -35,52 +63,19 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
 
     Raises:
         HTTPException:
-            - 400: Invalid request (validation failed)
             - 401: Authentication error (invalid API key for LLM)
             - 500: Internal server error
+
+        RequestValidationError:
+            - 422: Invalid request body (validation failed)
 
     Notes:
         This function acts as an HTTP adapter that keeps orchestration and domain logic
         inside `app.services.orchestrator`.
     """
-    try:
-        _validate_chat_request(request)
-        result = orchestrator.handle_message(request.history)
-        return result
+    history_dicts: list[dict] = []
+    for message in request.history:
+        history_dicts.append(message.model_dump())
 
-    except PermissionError as pe:
-        raise HTTPException(status_code=401, detail=str(pe)) from pe
-
-    except HTTPException:
-        raise
-
-    except Exception as error:
-        logger.exception("Unexpected error in chat endpoint")
-        raise HTTPException(
-            status_code=500,
-            detail="Unexpected internal error processing the message...",
-        ) from error
-
-
-def _validate_chat_request(request: ChatRequest) -> None:
-    """Minimal validation of the chat request (kept from previous adapter behavior)."""
-    if not isinstance(request.history, list):
-        raise HTTPException(
-            status_code=400, detail="The 'history' field must be an array of messages."
-        )
-    if len(request.history) == 0:
-        raise HTTPException(
-            status_code=400,
-            detail="The history cannot be empty. It must contain at least one message.",
-        )
-
-    for i, message in enumerate(request.history):
-        if not isinstance(message, dict):
-            raise HTTPException(
-                status_code=400, detail=f"Message {i} is not an object: {type(message)}"
-            )
-        if "role" not in message or "content" not in message:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Message {i} must contain 'role' and 'content'.",
-            )
+    result = orchestrator.handle_message(history_dicts)
+    return result

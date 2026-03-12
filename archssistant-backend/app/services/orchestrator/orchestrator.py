@@ -7,8 +7,6 @@ Responsibilities:
 - Request explanations from the RecommendationExplainer (LLM generated)
 """
 
-from __future__ import annotations
-
 import logging
 from typing import Any, Optional
 

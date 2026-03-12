@@ -5,8 +5,6 @@ Single responsibility:
 - Load prompt templates from the local prompt directory.
 """
 
-from __future__ import annotations
-
 import json
 import logging
 import os

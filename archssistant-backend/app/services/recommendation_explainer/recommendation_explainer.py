@@ -3,8 +3,6 @@
 Uses the LLM to generate descriptions and justifications for each recommended architecture.
 """
 
-from __future__ import annotations
-
 import logging
 from typing import Any
 from app.services.elicitation_machine.llm_client import DeepSeekLLMClient

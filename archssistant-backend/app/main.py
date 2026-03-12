@@ -20,7 +20,8 @@ setup_logging()
 import logging
 from pathlib import Path
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -35,6 +36,21 @@ app = FastAPI(
     version="1.0.0",
     description="API for the software architecture recommendation assistant",
 )
+
+
+@app.exception_handler(PermissionError)
+async def permission_error_handler(_: Request, exc: PermissionError) -> JSONResponse:
+    return JSONResponse(status_code=401, content={"detail": str(exc)})
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(_: Request, exc: Exception) -> JSONResponse:
+    logger.exception("Unhandled exception", exc_info=exc)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Unexpected internal error processing the message..."},
+    )
+
 
 logger.info(f"Initializing API: {config.APP_NAME}")
 
