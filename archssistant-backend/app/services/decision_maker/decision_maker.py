@@ -5,37 +5,40 @@ a ranked list of recommended architectures.
 """
 
 from __future__ import annotations
+
+import logging
 from typing import Any
-from app.core import get_logger
 from app.services.symbolic_knowledge_base import VALUE_MAP, architectures
+
+
+logger = logging.getLogger(__name__)
 
 
 class DecisionMaker:
     """Scores candidate architectures and returns the top matches."""
 
     def __init__(self) -> None:
-        self.architectures  = architectures
-        self.value_map      = VALUE_MAP
-        self.logger         = get_logger(__name__)
+        self.architectures = architectures
+        self.value_map = VALUE_MAP
 
     def get_recommendation(self, user_answers: dict[str, str]) -> list[dict[str, Any]]:
         """Scores candidate architectures and returns the top 3 matches.
-        
+
         Evaluates all architectures in the catalog against the user's
         inferred parameters using a scoring algorithm. Each parameter match
         contributes points based on how close the architecture's value is
         to the user's requirement.
-        
+
         Args:
             user_answers: Dictionary mapping parameter names to their inferred values
-            
+
         Returns:
             List of top 3 recommended architectures, each containing:
                 - All original architecture attributes
                 - score: Total match score
             Sorted by score in descending order
         """
-        self.logger.debug(f"Calculating recommendations for {len(user_answers)} parameters")
+        logger.debug(f"Calculating recommendations for {len(user_answers)} parameters")
         scored_architectures: list[dict[str, Any]] = []
 
         for arch in self.architectures:
@@ -57,5 +60,7 @@ class DecisionMaker:
         scored_architectures.sort(key=lambda x: x["score"], reverse=True)
         top_3 = scored_architectures[:3]
 
-        self.logger.info(f"Recommendations generated - top architectures: {[arch['name'] for arch in top_3]}")
+        logger.info(
+            f"Recommendations generated - top architectures: {[arch['name'] for arch in top_3]}"
+        )
         return top_3
