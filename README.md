@@ -8,7 +8,7 @@ Archssistant is a research prototype of an **Explainable Conversational Recommen
 > **Tech stack**
 > - **Language**: Python
 > - **Web Framework**: FastAPI
-> - **Dependency Management**: `uv`
+> - **Local runtime**: Docker + Docker Compose
 > - **Frontend**: HTML / CSS / JavaScript
 > - **LLM Provider**: DeepSeek
 
@@ -79,9 +79,7 @@ From the repository root:
 ```bash
 cp .env.example .env
 # edit .env and replace DEEPSEEK_API_KEY
-cd archssistant-backend
-uv sync
-uv run app/main.py
+docker compose up --build
 ```
 
 ---
