@@ -3,8 +3,7 @@
 Uses the LLM to generate descriptions and justifications for each recommended architecture.
 """
 
-from __future__ import annotations
-
+import json
 import logging
 from typing import Any
 from app.services.elicitation_machine.llm_client import DeepSeekLLMClient
@@ -24,6 +23,7 @@ class RecommendationExplainer:
         project_description: str,
         recommendations: list[dict[str, Any]],
         history: list[dict[str, Any]],
+        decision_table: dict[str, Any],
     ) -> dict[str, dict[str, str]]:
         """Generates descriptions and justifications for recommended architectures.
 
@@ -49,6 +49,33 @@ class RecommendationExplainer:
             [f"{msg['role'].upper()}: {msg['content']}" for msg in history]
         )
 
+        decision_table_summary: dict[str, Any] = {
+            "inferred_criteria": decision_table.get("inferred_criteria", {}),
+            "architectures": [],
+        }
+
+        rows = decision_table.get("rows", [])
+        rows_by_name: dict[str, Any] = {}
+        for row in rows:
+            name = row.get("architecture_name")
+            if isinstance(name, str):
+                rows_by_name[name] = row
+
+        for rec in recommendations:
+            name = rec.get("name")
+            if not isinstance(name, str):
+                continue
+            row = rows_by_name.get(name, {})
+            decision_table_summary["architectures"].append(
+                {
+                    "name": name,
+                    "score": row.get("score", rec.get("score")),
+                    "criteria_values": row.get("criteria_values", {}),
+                }
+            )
+
+        decision_table_json = json.dumps(decision_table_summary, ensure_ascii=True)
+
         recommendation_names_list: list[str] = []
         for recommendation in recommendations:
             recommendation_names_list.append(recommendation["name"])
@@ -60,6 +87,7 @@ class RecommendationExplainer:
         system_prompt = prompt_template.format(
             project_description=project_description,
             conversation_history=conversation_history,
+            decision_table=decision_table_json,
             recommendations_names=recommendations_names,
             architecture_1_name=recommendations[0]["name"]
             if len(recommendations) > 0

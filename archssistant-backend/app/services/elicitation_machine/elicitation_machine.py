@@ -5,8 +5,6 @@ Encapsulates the interview loop behaviors driven by the LLM:
 - generate the next question (or clarification)
 """
 
-from __future__ import annotations
-
 import logging
 import json
 from typing import Any

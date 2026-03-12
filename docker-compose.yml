@@ -1,0 +1,24 @@
+services:
+  backend:
+    build: ./archssistant-backend
+    container_name: archssistant-backend
+    env_file:
+      - ./.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./archssistant-backend/app:/app/app
+
+  frontend:
+    build: ./archssistant-frontend
+    container_name: archssistant-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3000
+    volumes:
+      - ./archssistant-frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
