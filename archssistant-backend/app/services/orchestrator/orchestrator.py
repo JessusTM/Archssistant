@@ -12,6 +12,7 @@ from typing import Any, Optional
 
 from app.services.decision_maker import DecisionMaker
 from app.services.elicitation_machine import ElicitationMachine
+from app.services.explicit_decision_model import ExplicitDecisionModel
 from app.services.recommendation_explainer import RecommendationExplainer
 
 
@@ -36,10 +37,14 @@ class Orchestrator:
         self,
         elicitation_machine: Optional[ElicitationMachine] = None,
         decision_maker: Optional[DecisionMaker] = None,
+        explicit_decision_model: Optional[ExplicitDecisionModel] = None,
         recommendation_explainer: Optional[RecommendationExplainer] = None,
     ) -> None:
         self.elicitation_machine = elicitation_machine or ElicitationMachine()
         self.decision_maker = decision_maker or DecisionMaker()
+        self.explicit_decision_model = (
+            explicit_decision_model or ExplicitDecisionModel()
+        )
         self.recommendation_explainer = (
             recommendation_explainer or RecommendationExplainer()
         )
@@ -285,8 +290,12 @@ class Orchestrator:
         Returns:
             Dictionary with recommendation response and updated state
         """
-        recommendations = self.decision_maker.get_recommendation(
+        decision_table = self.explicit_decision_model.instantiate(
             state["inferredParams"]
+        )
+
+        recommendations, evaluated_decision_table = (
+            self.decision_maker.get_recommendation(decision_table)
         )
         if not recommendations:
             empty_response = {
@@ -305,6 +314,7 @@ class Orchestrator:
             project_description=project_description,
             recommendations=recommendations,
             history=history,
+            decision_table=evaluated_decision_table,
         )
 
         enriched_recommendations = self._enrich_recommendations(

@@ -6,7 +6,6 @@ a ranked list of recommended architectures.
 
 import logging
 from typing import Any
-from app.services.symbolic_knowledge_base import VALUE_MAP, architectures
 
 
 logger = logging.getLogger(__name__)
@@ -16,49 +15,73 @@ class DecisionMaker:
     """Scores candidate architectures and returns the top matches."""
 
     def __init__(self) -> None:
-        self.architectures = architectures
-        self.value_map = VALUE_MAP
+        # Local mapping so this component depends only on the decision table instance.
+        self.value_map = {
+            "Low": 1,
+            "Small": 2,
+            "Moderate": 3,
+            "High": 4,
+            "Large": 4,
+            "Excellent": 5,
+        }
 
-    def get_recommendation(self, user_answers: dict[str, str]) -> list[dict[str, Any]]:
-        """Scores candidate architectures and returns the top 3 matches.
+    def get_recommendation(
+        self, decision_table: dict[str, Any], top_n: int = 3
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        """Score a decision table and return recommendations.
 
-        Evaluates all architectures in the catalog against the user's
-        inferred parameters using a scoring algorithm. Each parameter match
-        contributes points based on how close the architecture's value is
-        to the user's requirement.
+        The input table is expected to be already instantiated (values filled).
+        This method enriches the same table with numeric scores.
 
         Args:
-            user_answers: Dictionary mapping parameter names to their inferred values
+            decision_table: Instantiated decision table with inferred criteria and rows
+            top_n: Number of top architectures to return
 
         Returns:
-            List of top 3 recommended architectures, each containing:
-                - All original architecture attributes
-                - score: Total match score
-            Sorted by score in descending order
-        """
-        logger.debug(f"Calculating recommendations for {len(user_answers)} parameters")
-        scored_architectures: list[dict[str, Any]] = []
+            (recommendations, evaluated_decision_table)
 
-        for arch in self.architectures:
+            recommendations: Top N architectures with `score` added
+            evaluated_decision_table: Same table enriched with per-architecture `score`
+        """
+        inferred_criteria: dict[str, str] = decision_table.get("inferred_criteria", {})
+        rows: list[dict[str, Any]] = decision_table.get("rows", [])
+
+        logger.debug(
+            f"Calculating recommendations for {len(inferred_criteria)} parameters"
+        )
+
+        for row in rows:
             score = 0
-            for parameter, user_answer in user_answers.items():
-                arch_value = arch.get(parameter)
+            criteria_values: dict[str, Any] = row.get("criteria_values", {})
+
+            for parameter, user_answer in inferred_criteria.items():
+                arch_value = criteria_values.get(parameter)
                 user_score = self.value_map.get(user_answer)
+                if not isinstance(arch_value, str):
+                    continue
+
                 arch_score = self.value_map.get(arch_value)
 
-                if user_score and arch_score:
-                    difference = abs(user_score - arch_score)
-                    if difference == 0:
-                        score += 2
-                    elif difference == 1:
-                        score += 1
+                if user_score is None or arch_score is None:
+                    continue
 
-            scored_architectures.append({**arch, "score": score})
+                difference = abs(user_score - arch_score)
+                if difference == 0:
+                    score += 2
+                elif difference == 1:
+                    score += 1
 
-        scored_architectures.sort(key=lambda x: x["score"], reverse=True)
-        top_3 = scored_architectures[:3]
+            row["score"] = score
+
+        rows.sort(key=lambda r: int(r.get("score") or 0), reverse=True)
+        top_rows = rows[:top_n]
+
+        recommendations: list[dict[str, Any]] = []
+        for row in top_rows:
+            arch = row.get("architecture") or {}
+            recommendations.append({**arch, "score": row.get("score", 0)})
 
         logger.info(
-            f"Recommendations generated - top architectures: {[arch['name'] for arch in top_3]}"
+            f"Recommendations generated - top architectures: {[r['name'] for r in recommendations]}"
         )
-        return top_3
+        return recommendations, decision_table

@@ -8,6 +8,9 @@ User's project: "{project_description}"
 Complete conversation with the user:
 {conversation_history}
 
+Decision table (instantiated + scores for this case):
+{decision_table}
+
 REQUIRED ANALYSIS of the history:
 - Identify mentioned NON-FUNCTIONAL requirements (scalability, availability, maintainability, etc.)
 - Extract CONCRETE DATA from the project (data volume, team size, technical complexity)
@@ -26,6 +29,9 @@ For each recommended architecture, generate:
    - Mention SPECIFIC project parameters (e.g.: "given the high data volume", "considering the team's limited experience")
    - Explain what CONCRETE BENEFITS it brings to the user's context
    - Be PRECISE and avoid generalities
+   - Use ONLY information from the conversation history and the provided decision table
+   - Do NOT introduce new criteria that are not present in the decision table
+   - If some detail is missing, state it explicitly instead of guessing
 
 Architectures to describe: {recommendations_names}
 
