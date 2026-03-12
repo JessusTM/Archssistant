@@ -1,7 +1,7 @@
 """Main FastAPI server for Arch-Assistant.
 
 This is the application entry point. Configures the FastAPI application,
-registers API routers, enables CORS, mounts static files from the frontend.
+registers API routers and enables CORS.
 
 Business logic and endpoints are organized in separate modules
 to maintain clean, maintainable, and scalable code.
@@ -12,23 +12,17 @@ Architecture layers:
 - Elicitation Machine, Decision Maker, Recommendation Explainer: Specialized services
 """
 
-from app.core.logging.logging import setup_logging
-
-# Configure logging before importing routers/modules that may log at import time.
-setup_logging()
-
 import logging
-from pathlib import Path
-import uvicorn
+from app.core.logging.logging import setup_logging
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from app.core import config
 from app.api import router
+from app.core import config
 
 
+setup_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
@@ -52,8 +46,6 @@ async def unhandled_exception_handler(_: Request, exc: Exception) -> JSONRespons
     )
 
 
-logger.info(f"Initializing API: {config.APP_NAME}")
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -61,21 +53,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-logger.info("CORS middleware enabled for all origins")
 
 app.include_router(router)
 logger.info("API routers registered")
-
-project_root = Path(__file__).resolve().parents[2]
-frontend_dir = project_root / "archssistant-frontend"
-app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="static")
-logger.info(f"Static files mounted from: {frontend_dir}")
-logger.info(f"API {config.APP_NAME} ready to receive requests")
-
-
-if __name__ == "__main__":
-    """Run the FastAPI server using uvicorn.
-    
-    Starts the development server with auto-reload enabled.
-    """
-    uvicorn.run("app.main:app", host=config.HOST, port=config.PORT, reload=True)

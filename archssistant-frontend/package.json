@@ -1,0 +1,11 @@
+{
+  "name": "archssistant-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "start": "http-server -a ${HOST:-0.0.0.0} -p ${PORT:-3000}"
+  },
+  "dependencies": {
+    "http-server": "^14.1.1"
+  }
+}
