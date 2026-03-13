@@ -1,6 +1,6 @@
 """Decision Maker.
 
-Implements deterministic evaluation rules over symbolic knowledge to produce
+Implements deterministic evaluation rules over the Explicit Decision Model to produce
 a ranked list of recommended architectures.
 """
 

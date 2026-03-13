@@ -2,7 +2,7 @@
 
 Coordinates the conversation flow across:
 - ElicitationMachine
-- SymbolicKnowledgeBase (via DecisionMaker)
+- ExplicitDecisionModel (via DecisionMaker)
 - RecommendationExplainer
 """
 

@@ -3,7 +3,7 @@
 This package contains the core business logic components aligned with the architecture diagram:
 - Orchestrator
 - Elicitation Machine
-- Symbolic Knowledge Base
+- Explicit Decision Model
 - Decision Maker
 - Recommendation Explainer
 """

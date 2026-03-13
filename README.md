@@ -1,29 +1,21 @@
-# Archssistant
-
-Archssistant is a research prototype of an **Explainable Conversational Recommender System (CRS)** that enforces a **separation of responsibilities**: a **deterministic decision component** produces the final recommendation, while an **LLM is constrained to elicitation and natural-language explanations**.
-
-> [!NOTE]
-> This repository focuses on **traceability and auditability** of the recommendation process.
-
-> **Tech stack**
-> - **Language**: Python
-> - **Web Framework**: FastAPI
-> - **Local runtime**: Docker + Docker Compose
-> - **Frontend**: HTML / CSS / JavaScript
-> - **LLM Provider**: DeepSeek
-
-## Table of Contents
-- [Archssistant](#archssistant)
-  - [Table of Contents](#table-of-contents)
-  - [Need and Motivation](#need-and-motivation)
-  - [Capabilities](#capabilities)
-  - [Architecture Components](#architecture-components)
-  - [Run Locally](#run-locally)
-  - [Repository Structure](#repository-structure)
-  - [Configuration](#configuration)
-  - [Prompts and Traceability](#prompts-and-traceability)
-  - [Logging](#logging)
-    - [Changing the log level](#changing-the-log-level)
+<div align="center">
+  <h1>Archssistant</h1>
+  <p><em>A conversational assistant for explainable, transparent, and traceable software architecture decisions.</em></p>
+  <p>
+    <a href="https://fastapi.tiangolo.com"><img src="https://img.shields.io/badge/FastAPI-0.110+-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI"></a>
+    <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript"><img src="https://img.shields.io/badge/JavaScript-Frontend-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript"></a>
+    <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
+    <a href="https://www.docker.com"><img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"></a>
+    <a href="https://platform.deepseek.com"><img src="https://img.shields.io/badge/DeepSeek-LLM-4D6BFE?style=for-the-badge" alt="DeepSeek"></a>
+  </p>
+  <p>
+    <a href="#need-and-motivation">Need and Motivation</a> ·
+    <a href="#capabilities">Capabilities</a> ·
+    <a href="#architecture-components">Architecture Components</a> ·
+    <a href="#setup">Setup</a> ·
+    <a href="#prompts-and-traceability">Prompts and Traceability</a>
+  </p>
+</div>
 
 ---
 ## Need and Motivation
@@ -38,17 +30,16 @@ LLM-based conversational recommenders commonly improve interaction quality, but 
 
 | Capability                                                                 | Status |
 | -------------------------------------------------------------------------- | ------ |
-| **Multi-turn interaction orchestration (state machine)**                   | ✅     |
-| **Deterministic recommendation (decision table / scoring / ranking)**      | ✅     |
-| **Symbolic knowledge base (explicit architecture catalog)**                | ✅     |
-| **LLM elicitation: interpret user answers into predefined criteria**       | ✅     |
-| **LLM elicitation: ambiguity detection + clarification question generation** | ✅   |
-| **LLM explanation: natural-language justification grounded on decision output** | ✅ |
-| **Prompted workflow (prompt templates versioned in-repo)**                 | ✅     |
-| **Structured logging (info/debug/error files)**                            | ✅     |
-| **Token/context optimization (avoid re-sending long histories)**           | ❌     |
-| **Evaluation metrics for explanation quality and auditability**            | ❌     |
-| **Long-term conversation memory with traceable persistence (no re-sending context)** | ❌ |
+| Multi-turn interaction orchestration (state machine)                   | ✅     |
+| Deterministic recommendation (decision table / scoring / ranking)      | ✅     |
+| Explicit Decision Model (explicit architecture catalog)               | ✅     |
+| LLM elicitation: interpret user answers into predefined criteria       | ✅     |
+| LLM elicitation: ambiguity detection + clarification question generation | ✅   |
+| LLM explanation: natural-language justification grounded on decision output | ✅ |
+| Prompted workflow (prompt templates versioned in-repo)                 | ✅     |
+| Token/context optimization (avoid re-sending long histories)           | ❌     |
+| Evaluation metrics for explanation quality and auditability            | ❌     |
+| Long-term conversation memory with traceable persistence (no re-sending context) | ❌ |
 
 > [!NOTE]
 > The prototype produces explanations grounded on deterministic outputs, but it currently lacks a standardized evaluation layer to quantify explanation quality (e.g., faithfulness, completeness) and auditability (e.g., trace reconstruction accuracy).
@@ -57,11 +48,11 @@ LLM-based conversational recommenders commonly improve interaction quality, but 
 ## Architecture Components
 
 - **UI (chat)**: user entry point (frontend).
-- **Orchestrator**: controls the multi-turn flow (state machine).
-- **Elicitation Machine (LLM)**: maps user natural language to predefined criteria and detects ambiguity (clarification).
-- **Symbolic Knowledge Base**: explicit, editable knowledge used by the deterministic decision mechanism.
-- **Decision Maker (deterministic)**: computes the final ranking and returns top-k recommendations.
-- **Recommendation Explainer (LLM)**: generates a justification based on the deterministic decision and traced variables.
+- **Orchestrator**: central coordinator of the interaction flow and component exchanges.
+- **Elicitation Machine (LLM)**: receives elicitation requests and returns inferred criteria.
+- **Explicit Decision Model**: receives inferred criteria and returns a decision table.
+- **Decision Maker (deterministic)**: receives a recommendation request plus decision table, and returns recommendation plus decision table.
+- **Recommendation Explainer (LLM)**: receives recommendation plus decision table, and returns recommendation plus LLM explanation.
 
 > [!CAUTION]
 > The LLM must remain **non-decisional**. Any prompt or integration change that lets the LLM alter ranking undermines auditability.
@@ -72,9 +63,9 @@ LLM-based conversational recommenders commonly improve interaction quality, but 
 > Components marked with ⊗ are LLM-based and are restricted to elicitation and explanation (not decision making).
 
 ---
-## Run Locally
+## Setup
 
-From the repository root:
+From the repository root, create `.env`, set `DEEPSEEK_API_KEY`, and optionally adjust `LOG_LEVEL`:
 
 ```bash
 cp .env.example .env
@@ -82,47 +73,10 @@ cp .env.example .env
 docker compose up --build
 ```
 
----
-## Repository Structure
-
-```text
-.
-├── archssistant-backend
-│   ├── app
-│   │   ├── api
-│   │   │   ├── exceptions.py             # Custom exception classes for error handling
-│   │   │   ├── __init__.py               # Package initialization
-│   │   │   ├── models.py                 # Pydantic models for request/response validation
-│   │   │   └── routes.py                 # HTTP endpoints and API routes
-│   │   ├── core
-│   │   │   ├── config.py                 # Application configuration and settings
-│   │   │   ├── __init__.py               # Package initialization
-│   │   │   ├── logging_config.py         # Logging setup and configuration
-│   │   │   └── logging_utils.py          # Logging utility functions
-│   │   ├── main.py                       # FastAPI application entry point
-│   │   └── services
-│   │       ├── decision_maker            # Deterministic recommendation engine
-│   │       ├── elicitation_machine       # LLM-based user input interpretation
-│   │       ├── orchestrator              # Multi-turn conversation flow control
-│   │       ├── recommendation_explainer  # LLM-based explanation generation
-│   │       └── symbolic_knowledge_base   # Architecture catalog and knowledge base
-│   ├── logs                       # Application log files directory
-│   ├── pyproject.toml             # Python project dependencies
-│   └── uv.lock                    # Dependency lock file
-├── archssistant-frontend
-│   ├── index.html                 # Main HTML page
-│   ├── script.js                  # Frontend JavaScript logic
-│   └── style.css                  # CSS styling
-└── README.md                      # Project documentation
-```
-
----
-## Configuration
-
-The backend uses environment variables loaded from a local `.env` file.
+Relevant `.env` values:
 
 ```bash
-LOG_LEVEL=DEBUG
+LOG_LEVEL=DEBUG  # INFO / WARNING / ERROR / CRITICAL
 HOST=0.0.0.0
 PORT=5000
 DEEPSEEK_API_KEY=sk-your-key-here
@@ -158,40 +112,3 @@ These prompts are treated as **versioned behavioral artifacts** (Git history = t
   * `{conversation_history}`
   * `{recommendations_names}`
     Output is a JSON object whose keys must match architecture names exactly.
-
----
-## Logging
-
-Logging is centrally configured in:
-
-* `archssistant-backend/app/core/logging_config.py`
-
-Logs are written under:
-
-* `archssistant-backend/logs/`
-
-Files:
-
-* `info.log`  — `INFO` and `WARNING` only (records below `ERROR`)
-* `error.log` — `ERROR` and `CRITICAL`
-* `debug.log` — **only created when `LOG_LEVEL=DEBUG`**, includes `DEBUG` and above
-
-Rotation policy:
-
-* Rotating file handlers with **10 MB** max per file
-* Keeps **5** backups per log file
-
-### Changing the log level
-
-The console verbosity is controlled by `LOG_LEVEL` (loaded from `.env`):
-
-```bash
-LOG_LEVEL=DEBUG
-# or: INFO / WARNING / ERROR / CRITICAL
-```
-
-> [!NOTE]
-> Recommended usage:
->
-> * `DEBUG` for development and experimentation (more detail; creates `debug.log`)
-> * `INFO` for normal local runs (cleaner console output)
