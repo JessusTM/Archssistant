@@ -30,16 +30,16 @@ LLM-based conversational recommenders commonly improve interaction quality, but 
 
 | Capability                                                                 | Status |
 | -------------------------------------------------------------------------- | ------ |
-| **Multi-turn interaction orchestration (state machine)**                   | ✅     |
-| **Deterministic recommendation (decision table / scoring / ranking)**      | ✅     |
-| **Explicit Decision Model (explicit architecture catalog)**               | ✅     |
-| **LLM elicitation: interpret user answers into predefined criteria**       | ✅     |
-| **LLM elicitation: ambiguity detection + clarification question generation** | ✅   |
-| **LLM explanation: natural-language justification grounded on decision output** | ✅ |
-| **Prompted workflow (prompt templates versioned in-repo)**                 | ✅     |
-| **Token/context optimization (avoid re-sending long histories)**           | ❌     |
-| **Evaluation metrics for explanation quality and auditability**            | ❌     |
-| **Long-term conversation memory with traceable persistence (no re-sending context)** | ❌ |
+| Multi-turn interaction orchestration (state machine)                   | ✅     |
+| Deterministic recommendation (decision table / scoring / ranking)      | ✅     |
+| Explicit Decision Model (explicit architecture catalog)               | ✅     |
+| LLM elicitation: interpret user answers into predefined criteria       | ✅     |
+| LLM elicitation: ambiguity detection + clarification question generation | ✅   |
+| LLM explanation: natural-language justification grounded on decision output | ✅ |
+| Prompted workflow (prompt templates versioned in-repo)                 | ✅     |
+| Token/context optimization (avoid re-sending long histories)           | ❌     |
+| Evaluation metrics for explanation quality and auditability            | ❌     |
+| Long-term conversation memory with traceable persistence (no re-sending context) | ❌ |
 
 > [!NOTE]
 > The prototype produces explanations grounded on deterministic outputs, but it currently lacks a standardized evaluation layer to quantify explanation quality (e.g., faithfulness, completeness) and auditability (e.g., trace reconstruction accuracy).
