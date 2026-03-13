@@ -1,4 +1,4 @@
-"""Explicit decision model.
+"""Explicit Decision Model.
 
 This component instantiates a decision table for a given case. It does not
 score or rank architectures; it only fills the table with values.
@@ -6,11 +6,11 @@ score or rank architectures; it only fills the table with values.
 
 from typing import Any
 
-from app.services.symbolic_knowledge_base import architectures
+from app.services.explicit_decision_model.architecture_catalog import architectures
 
 
 class ExplicitDecisionModel:
-    """Instantiates a decision table from inferred criteria."""
+    """Instantiates a decision table from inferred criteria and explicit knowledge."""
 
     def instantiate(self, inferred_criteria: dict[str, str]) -> dict[str, Any]:
         """Build a decision table instance with values filled.

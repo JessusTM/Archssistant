@@ -3,7 +3,7 @@
 Responsibilities:
 - Derive and persist conversation state from the message history
 - Ask the ElicitationMachine for interpretations and next questions
-- Request recommendations from the DecisionMaker (symbolic evaluation)
+- Request recommendations from the DecisionMaker (explicit decision evaluation)
 - Request explanations from the RecommendationExplainer (LLM generated)
 """
 
